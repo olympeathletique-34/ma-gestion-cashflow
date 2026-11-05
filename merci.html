@@ -1,0 +1,65 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Merci pour ton achat</title><meta name="theme-color" content="#14251f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cashflow"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="stylesheet" href="fonts.css"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<meta name="robots" content="noindex">
+<style>
+/* Page de remerciement après l'achat : même registre que la couverture du livre. */
+:root{
+  --paper:#f3f5f1; --sheet:#fbfcfa; --ink:#14251f; --muted:#5d6e66; --rule:#d5ded8;
+  --teal:#0b7f8f; --gold:#c48a12; --gold-soft:#f6ead0;
+  --f-display:"Gloock",Georgia,serif;
+  --f-body:"Source Serif 4",Charter,Georgia,serif;
+  --f-label:"IBM Plex Sans Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832;
+  --teal:#4fc2cf; --gold:#e3b14a; --gold-soft:#33290f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832;
+  --teal:#4fc2cf; --gold:#e3b14a; --gold-soft:#33290f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.55}
+a{color:var(--teal)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:44px 56px;display:grid;gap:28px}
+.kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(40px,8vw,72px);line-height:1;margin:0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.lead{margin:0;font-size:20px;max-width:34ch}
+.head{display:grid;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:26px}
+.ico{width:88px;height:88px;border-radius:20px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.mail{background:var(--gold-soft);border-radius:16px;padding:20px 22px;display:grid;gap:6px}
+.mail b{font-family:var(--f-label);font-size:17px;letter-spacing:.02em}
+.mail p{margin:0;font-size:17px}
+ol{margin:0;padding:0;list-style:none;display:grid;gap:14px;counter-reset:s}
+ol li{counter-increment:s;display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;align-items:start;background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:16px 18px}
+ol li::before{content:counter(s);font:600 18px var(--f-mono);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--paper)}
+ol li b{font-family:var(--f-label);font-size:18px}
+ol li p{margin:4px 0 0;font-size:16px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;font:700 16px var(--f-label);letter-spacing:.04em;border-radius:999px;padding:14px 26px;background:var(--ink);color:var(--paper);text-decoration:none;justify-self:start}
+.addr{font-family:var(--f-mono);font-size:15px;color:var(--muted);margin:0}
+.foot{font-family:var(--f-label);font-size:14px;color:var(--muted);margin:0}
+</style>
+
+<main class="wrap">
+  <header class="head">
+    <img src="icons/icon-192.png" class="ico" width="88" height="88" alt="">
+    <span class="kicker">Commande confirmée</span>
+    <h1>Merci, ton pack est <em>à toi</em>.</h1>
+    <p class="lead">Le livre « Ma gestion du cashflow » et l’appli sont prêts à être installés sur ton téléphone ou ton ordinateur.</p>
+  </header>
+
+  <div class="mail" role="note">
+    <b>Regarde ta boîte mail</b>
+    <p>Tu reçois dans quelques minutes l’e-mail de livraison avec ton <b>code d’accès</b>. S’il n’arrive pas, regarde dans les spams ou l’onglet Promotions.</p>
+  </div>
+
+  <ol>
+    <li><div><b>Ouvre l’adresse de l’appli</b><p>Sur ton téléphone : Safari sur iPhone, Chrome sur Android. Sur ordinateur : Chrome, Edge ou Safari.</p></div></li>
+    <li><div><b>Installe l’application</b><p>La page te montre comment faire sur ton appareil : une icône apparaît sur ton écran d’accueil.</p></div></li>
+    <li><div><b>Ouvre-la et saisis ton code</b><p>Le code de ton e-mail, une seule fois. Ensuite, commence par le livre : le carnet que tu rempliras créera ta feuille dans l’appli.</p></div></li>
+  </ol>
+
+  <a class="btn" href="./">Ouvrir l’appli</a>
+  <p class="addr">ma-gestion-cashflow.vercel.app</p>
+  <p class="foot">Éducation financière, pas un conseil personnalisé.</p>
+</main>
+</body></html>
