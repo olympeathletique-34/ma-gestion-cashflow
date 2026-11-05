@@ -1,0 +1,778 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ma gestion du cashflow</title><meta name="theme-color" content="#14251f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cashflow"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="stylesheet" href="fonts.css"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="params.js"></script><script src="shell.js"></script></head><body>
+
+
+<style>
+/* Mise en page : un carnet de comptes. Colonne de lecture à 65 caractères, sommaire en marge comme une table des matières de registre, chiffres en police mono comme dans un livre de caisse. */
+:root{
+  --paper:#f3f5f1; --sheet:#fbfcfa; --ink:#14251f; --muted:#5d6e66; --rule:#d5ded8; --ledger:#e3ebe5;
+  --teal:#0b7f8f; --teal-soft:#d9eef0; --gold:#c48a12; --gold-soft:#f6ead0; --red:#c2412d; --green:#2a7a4b;
+  --f-display:"Gloock","Georgia",serif;
+  --f-body:"Source Serif 4","Charter","Georgia",serif;
+  --f-label:"IBM Plex Sans Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832; --ledger:#1d2a25;
+  --teal:#4fc2cf; --teal-soft:#123437; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63; --green:#5cc489; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832; --ledger:#1d2a25;
+  --teal:#4fc2cf; --teal-soft:#123437; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63; --green:#5cc489; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.62;-webkit-text-size-adjust:100%}
+a{color:var(--teal)}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.shell{display:grid;grid-template-columns:1fr;max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 80px;gap:0 48px}
+@media (min-width:980px){.shell{grid-template-columns:270px minmax(0,1fr)}}
+
+/* Couverture */
+.cover{grid-column:1/-1;padding-block:44px 30px;border-bottom:2px solid var(--ink);display:grid;gap:18px}
+.cover .kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
+.cover h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,92px);line-height:.96;letter-spacing:-.01em;max-width:13ch}
+.cover h1 em{font-style:normal;color:var(--gold)}
+.cover p.subtitle{font-family:var(--f-label);font-weight:600;font-size:clamp(18px,2.6vw,26px);color:var(--ink);max-width:30ch;line-height:1.25}
+.cover p{max-width:58ch;margin:0;color:var(--muted);font-size:19px}
+.cover-ledger{display:flex;flex-wrap:wrap;gap:10px 28px;font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.cover-ledger b{color:var(--ink);font-weight:600}
+
+/* Sommaire */
+.toc{position:relative;padding-block:24px 8px}
+@media (min-width:980px){.toc{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;max-height:100vh;overflow:auto;padding-block:30px 30px}}
+.toc-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.toc-toggle{display:none}
+@media (max-width:979px){.toc-toggle{display:inline-flex;font-family:var(--f-label);font-weight:600;font-size:14px;background:var(--sheet);border:1px solid var(--rule);border-radius:999px;padding:6px 14px;color:var(--ink);cursor:pointer}.toc.closed ol{display:none}}
+.prog{height:6px;border-radius:99px;background:var(--ledger);overflow:hidden;margin:0 0 14px}
+.prog i{display:block;height:100%;background:var(--gold);transition:width .4s}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.toc li a{display:grid;grid-template-columns:34px 1fr auto;gap:6px;align-items:baseline;text-decoration:none;color:var(--ink);padding:7px 8px;border-radius:8px;font-family:var(--f-label);font-weight:500;font-size:15.5px;line-height:1.3}
+.toc li a .n{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.toc li a .st{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.toc li a:hover{background:var(--ledger)}
+.toc li a[aria-current="page"]{background:var(--teal-soft);color:var(--ink)}
+.toc li a.locked{color:var(--muted)}
+.toc li a.done .st{color:var(--green)}
+
+/* Chapitre */
+main{min-width:0;padding-block:30px 0}
+.chap{max-width:68ch}
+.chap-num{font-family:var(--f-mono);font-size:14px;color:var(--teal);letter-spacing:.06em}
+.chap h2{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,5.2vw,54px);line-height:1.05;margin:6px 0 6px}
+.chap .lede{font-style:italic;color:var(--muted);font-size:19.5px;margin:0 0 26px}
+.chap p{margin:0 0 1em}
+.chap h3{font-family:var(--f-label);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin:34px 0 12px}
+.story p:first-child::first-letter{font-family:var(--f-display);float:left;font-size:3.5em;line-height:.85;padding:6px 10px 0 0;color:var(--gold)}
+.dialog{border-left:3px solid var(--gold);padding:2px 0 2px 16px;margin:0 0 1em}
+.dialog p{margin:0 0 .5em}
+.dialog .who{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+
+/* Encadrés : ce que Léo a compris / à toi */
+.learn,.todo,.warn{border-radius:var(--r);padding:18px 20px;margin:26px 0;display:grid;gap:8px}
+.learn{background:var(--teal-soft)}
+.todo{background:var(--sheet);border:1.5px dashed var(--teal)}
+.warn{background:var(--gold-soft)}
+.learn h4,.todo h4,.warn h4{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+.learn h4{color:var(--teal)} .todo h4{color:var(--teal)} .warn h4{color:var(--gold)}
+.learn ul,.todo ol,.todo ul{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.learn p,.todo p,.warn p{margin:0}
+
+/* Tableaux de chiffres façon registre */
+.tbl{overflow-x:auto;margin:22px 0;border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:15.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--ledger)}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+
+/* Feuille Rich Dad miniature */
+.sheet{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--ink);border-radius:6px;overflow:hidden;margin:24px 0;background:var(--sheet);font-size:15px}
+.sheet>div{padding:12px 14px;min-width:0}
+.sheet .hd{grid-column:1/-1;background:var(--ink);color:var(--paper);font-family:var(--f-label);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:12.5px;padding:7px 14px}
+.sheet .cell+.cell{border-left:1px solid var(--rule)}
+.sheet .cell h5{margin:0 0 6px;font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.sheet .ln{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--rule);padding:3px 0}
+.sheet .ln b{font-family:var(--f-mono);font-weight:600}
+.sheet .ln.pay{border-bottom:0;margin-top:6px;color:var(--gold)}
+@media (max-width:520px){.sheet{grid-template-columns:1fr}.sheet .cell+.cell{border-left:0;border-top:1px solid var(--rule)}}
+
+/* Calculateurs */
+.calc{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:18px 20px;margin:26px 0;display:grid;gap:14px}
+.calc h4{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.calc .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.calc label{display:grid;gap:4px;font-family:var(--f-label);font-weight:600;font-size:14px}
+.calc input{font-family:var(--f-mono);font-size:17px;padding:9px 11px;border:1.5px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
+.calc .out{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.calc .out div{background:var(--ledger);border-radius:10px;padding:10px 12px}
+.calc .out span{display:block;font-family:var(--f-label);font-size:13px;color:var(--muted)}
+.calc .out b{font-family:var(--f-mono);font-size:21px;font-weight:600}
+.gauge{height:14px;border-radius:99px;background:var(--ledger);position:relative;overflow:hidden}
+.gauge i{position:absolute;inset:0 auto 0 0;background:var(--gold);border-radius:99px;transition:width .3s}
+.gauge-l{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.calc svg{width:100%;height:auto;display:block}
+
+/* Quiz */
+.quiz{margin:40px 0 10px;border:2px solid var(--ink);border-radius:var(--r);background:var(--sheet);overflow:hidden}
+.quiz-h{background:var(--ink);color:var(--paper);padding:12px 18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.quiz-h b{font-family:var(--f-label);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px}
+.quiz-h span{font-family:var(--f-mono);font-size:13px;opacity:.8}
+.q{padding:16px 18px;border-bottom:1px solid var(--rule)}
+.q:last-of-type{border-bottom:0}
+.q p.qt{font-weight:600;margin:0 0 10px}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;font-size:16.5px;line-height:1.45;background:var(--paper);color:var(--ink);border:1.5px solid var(--rule);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:hover{border-color:var(--teal)}
+.opt .k{font-family:var(--f-mono);font-weight:600;color:var(--muted);flex:none}
+.opt.ok{border-color:var(--green);background:color-mix(in srgb,var(--green) 12%,var(--paper))}
+.opt.ko{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--paper))}
+.fb{font-size:15.5px;margin-top:8px;color:var(--muted)}
+.fb b{color:var(--ink)}
+.quiz-f{padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--ledger)}
+.quiz-f .sp{flex:1}
+.btn{font-family:var(--f-label);font-weight:700;font-size:15.5px;letter-spacing:.02em;border-radius:999px;padding:11px 20px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.nav{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:30px 0 0}
+.lockmsg{background:var(--gold-soft);border-radius:var(--r);padding:18px 20px}
+.foot{margin-top:46px;font-size:14.5px;color:var(--muted);border-top:1px solid var(--rule);padding-top:14px;max-width:68ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Carnet : les réponses du lecteur, qui préremplissent l’application */
+.carnet{margin:26px 0;border:1.5px solid var(--gold);border-radius:var(--r);background:var(--sheet);overflow:hidden}
+.carnet-h{background:var(--gold-soft);padding:12px 18px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
+.carnet-h b{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.carnet-h span{font-family:var(--f-label);font-size:13.5px;color:var(--muted)}
+.carnet-b{padding:16px 18px;display:grid;gap:14px}
+.cq{display:grid;gap:6px;min-width:0}
+.cq>label,.cq>.cl{font-family:var(--f-label);font-weight:600;font-size:15.5px;line-height:1.35}
+.cq small{display:block;font-family:var(--f-body);font-weight:400;font-size:14.5px;color:var(--muted)}
+.cq .in{display:flex;align-items:center;gap:8px;max-width:340px}
+.cq input,.cq textarea,.cq select{font:inherit;font-family:var(--f-mono);font-size:16.5px;padding:9px 11px;border:1.5px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);width:100%;min-width:0}
+.cq input[type=text],.cq textarea{font-family:var(--f-body)}
+.cq textarea{min-height:84px;resize:vertical}
+.cq .u{font-family:var(--f-label);font-size:14px;color:var(--muted);white-space:nowrap}
+.cq input:focus,.cq textarea:focus,.cq select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{font-family:var(--f-label);font-weight:600;font-size:14.5px;border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--paper)}
+.chips button:focus-visible{outline:3px solid var(--teal-soft);outline-offset:2px}
+.cres{background:var(--ledger);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.cres span{font-family:var(--f-label);font-size:14.5px;color:var(--muted)}
+.cres b{font-family:var(--f-mono);font-size:20px;font-weight:600}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.cbien{border:1px dashed var(--rule);border-radius:12px;padding:14px;display:grid;gap:12px;position:relative}
+.cbien h5{margin:0;font-family:var(--f-label);font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.lnk{font-family:var(--f-label);font-weight:600;font-size:14px;background:none;border:0;color:var(--teal);cursor:pointer;text-decoration:underline;padding:4px 0}
+.csaved{font-family:var(--f-label);font-size:13px;color:var(--green)}
+.recap{display:grid;gap:18px}
+.recap section{border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);padding:14px 18px}
+.recap h4{margin:0 0 8px;font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.recap h4 a{color:var(--muted);font-weight:600;letter-spacing:0;text-transform:none}
+.recap .ln{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dotted var(--rule);padding:5px 0;font-size:15.5px}
+.recap .ln:last-child{border-bottom:0}
+.recap .ln b{font-family:var(--f-mono);font-weight:600;text-align:right;overflow-wrap:anywhere}
+.recap .ln.empty b{color:var(--muted);font-weight:400}
+</style>
+
+<div class="shell">
+  <header class="cover">
+    <span class="kicker">Un roman d’apprentissage financier · édition <span data-p="year" data-f="num">2026</span></span>
+    <h1>Ma gestion du <em>cashflow</em></h1>
+    <p class="subtitle">Sortir de la Rat Race et atteindre l’indépendance financière</p>
+    <p>L’histoire de Léo, 34 ans, qui découvre pourquoi il court sans avancer, et comment il construit, chiffre après chiffre, des revenus qui travaillent pour lui. Les principes de « Père riche, père pauvre » de Robert Kiyosaki, appliqués à la France d’aujourd’hui : statuts, impôts, immobilier, placements.</p>
+    <div class="cover-ledger"><span>11 chapitres</span><span>9 quiz</span><span>2 calculateurs</span><span>Lecture ≈ <b>1 h 30</b></span></div>
+  </header>
+
+  <nav class="toc closed" id="toc" aria-label="Sommaire">
+    <div class="toc-h"><span>Sommaire</span><button class="toc-toggle" id="toc-toggle" aria-expanded="false" aria-controls="toc-list">Afficher</button></div>
+    <div class="prog" role="progressbar" aria-label="Progression" aria-valuemin="0" aria-valuemax="100" id="prog-bar"><i id="prog" style="width:0%"></i></div>
+    <ol id="toc-list"></ol>
+  </nav>
+
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<!-- ============ CONTENU DES CHAPITRES ============ -->
+<template id="c-prologue">
+  <div class="chap-num">Prologue</div>
+  <h2>Le 27 du mois</h2>
+  <p class="lede">Où Léo regarde son compte en banque et ne comprend pas où est passé son salaire.</p>
+  <div class="story">
+    <p>Le 27, Léo ouvre son appli bancaire comme on soulève un couvercle de casserole oubliée sur le feu. 212,40 €. Le salaire tombe le 30. Trois jours à tenir, un plein d’essence à faire, et l’anniversaire de sa nièce samedi.</p>
+    <p>Il gagne pourtant correctement sa vie. Graphiste salarié dans une agence de Lyon, 2 150 € net par mois, plus quelques missions en freelance le soir. Il y a deux ans, il gagnait 1 700 €. Il avait cru qu’avec 450 € de plus, il respirerait. Il ne respire pas mieux. Il a simplement pris un appartement plus grand, une voiture plus récente, et un abonnement à une salle de sport où il va le mardi.</p>
+    <p>Ce soir-là, sur le palier, il croise Solène, sa voisine du dessus. Elle a 52 ans, elle porte un vieux pull, elle a l’air de quelqu’un qui n’a jamais regardé son compte le 27. Il sait vaguement qu’elle était plombière, qu’elle a « arrêté de travailler » à 47 ans, et que le dimanche, chez lui, on entend des dés rouler sur une table.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Tu as la tête de quelqu’un qui fait ses comptes à l’envers. Viens dimanche. On joue à un jeu. Il dure trois heures, et il m’a fait gagner vingt ans. »</p></div>
+    <p>Léo a ri. Puis, dimanche, il est monté.</p>
+  </div>
+  <div class="learn"><h4>Comment lire ce livre</h4>
+    <ul><li>Chaque chapitre raconte une étape de Léo, puis résume ce qu’il a compris.</li>
+    <li>Un encadré « À toi » te donne une action concrète, souvent dans l’application de suivi.</li>
+    <li>Un quiz de 3 questions clôt chaque chapitre. Réponds juste aux trois pour ouvrir le suivant : les principes du début portent tout le reste.</li></ul></div>
+  <div class="warn"><h4>Avant de commencer</h4><p>Ce livre est un outil d’éducation financière, pas un conseil personnalisé en investissement ou en fiscalité. Les chiffres fiscaux sont ceux de 2026 et changent chaque année : vérifie-les sur impots.gouv.fr ou urssaf.fr avant toute décision.</p></div>
+</template>
+
+<template id="c-ch1">
+  <div class="chap-num">Chapitre 1</div>
+  <h2>La roue du hamster</h2>
+  <p class="lede">Où Léo découvre qu’il joue à un jeu dont il ne connaissait pas les règles.</p>
+  <div class="story">
+    <p>Sur la table de Solène, un plateau en deux parties. Au centre, un petit circuit en anneau, serré, où les pions tournent en rond. Autour, une grande piste extérieure, plus large, avec des cases dorées. Solène pose le doigt sur l’anneau du milieu.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Ça, c’est la Rat Race. La course du rat. Tout le monde commence ici. Tu reçois ton salaire à chaque tour, tu paies tes dépenses, et tu recommences. Le but du jeu, c’est d’en sortir. »</p></div>
+    <p>Léo tire sa carte de profession : instituteur. Salaire 3 300, dépenses 2 190, cashflow mensuel 1 110. Il trouve ça plutôt bien. Au troisième tour, il tombe sur une case « Bateau » : un joli voilier à crédit. Il l’achète. Son cashflow baisse de 340. Au cinquième tour, une case « Bébé ». Ses dépenses montent encore.</p>
+    <p>À côté de lui, Solène a tiré une profession moins payée. Mais elle achète, case après case, de petites choses étranges : un deux-pièces loué qui lui rapporte 180 par mois, quelques actions, une laverie automatique. Au douzième tour, elle pose son pion sur la piste extérieure.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Je suis sorti. Mes revenus passifs dépassent mes dépenses. Je n’ai plus besoin de mon salaire pour vivre. C’est tout. C’est la seule règle qui compte. »</p></div>
+    <p>Léo regarde son pion, toujours dans l’anneau, et pense à ses 212,40 €.</p>
+  </div>
+  <h3>La règle du jeu, dans la vraie vie</h3>
+  <p>La Rat Race décrit une boucle : tu travailles pour un revenu, ce revenu paie tes dépenses, et quand ton revenu augmente, tes dépenses augmentent avec lui. Plus de salaire, un plus grand logement, une plus belle voiture, plus de crédits. Le mois suivant, tu recommences. Tu cours, mais la roue tourne avec toi.</p>
+  <p>La sortie n’a rien à voir avec le montant de ton salaire. On sort quand une seule condition est remplie :</p>
+  <div class="learn"><h4>La condition de sortie</h4><p style="font-size:21px;font-family:var(--f-display)">Revenus passifs mensuels &gt; Dépenses mensuelles</p><p>Un revenu passif arrive que tu travailles ou non ce mois-ci : un loyer, un dividende, des intérêts, les ventes d’un produit qui se vend sans toi.</p></div>
+  <p>Ce critère change tout. Un cadre à 6 000 € par mois qui dépense 5 800 € est dans la course. Une aide-soignante à 1 600 € qui touche 1 300 € de loyers nets et dépense 1 250 € en est sortie. Elle peut continuer à travailler, mais elle n’y est plus obligée.</p>
+  <div class="calc" id="calc-rr"><h4>Calculateur · Où en es-tu de la course ?</h4>
+    <div class="fields"><label for="rr-exp">Dépenses par mois (€)<input id="rr-exp" type="number" inputmode="decimal" value="2100" min="0"></label><label for="rr-pas">Revenus passifs par mois (€)<input id="rr-pas" type="number" inputmode="decimal" value="150" min="0"></label></div>
+    <div class="gauge" aria-hidden="true"><i id="rr-g" style="width:7%"></i></div><div class="gauge-l"><span>0 %</span><span>sortie à 100 %</span></div>
+    <div class="out"><div><span>Couverture des dépenses</span><b id="rr-cov">7 %</b></div><div><span>Revenus passifs à créer</span><b id="rr-miss">1 950 €</b></div><div><span>Capital à 4 % pour y arriver</span><b id="rr-cap">585 000 €</b></div></div>
+    <p class="fb" style="margin:0">Exemple pré-rempli. Mets tes propres chiffres : rien n’est enregistré.</p></div>
+  <div class="todo"><h4>À toi</h4><ol><li>Note tes dépenses du mois dernier, toutes, même le café.</li><li>Note ce que tu as touché sans travailler ce mois-là. Pour la plupart des gens, c’est zéro ou quelques euros d’intérêts.</li><li>Calcule ta couverture. Ce chiffre sera ton tableau de bord pour la suite du livre.</li></ol></div>
+</template>
+
+<template id="c-ch2">
+  <div class="chap-num">Chapitre 2</div>
+  <h2>Ce qui remplit ta poche, ce qui la vide</h2>
+  <p class="lede">Où l’on apprend que la maison de Léo n’est pas l’actif qu’il croyait.</p>
+  <div class="story">
+    <p>Le dimanche suivant, Léo arrive avec une fierté : il a calculé son patrimoine. Sa voiture, 14 000 €. L’appartement qu’il envisage d’acheter, 220 000 €. « Ce sont des actifs, non ? Ça vaut de l’argent. »</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Pose-toi une seule question. Ce mois-ci, est-ce que cette chose a mis de l’argent dans ta poche, ou est-ce qu’elle en a sorti ? »</p></div>
+    <p>La voiture : crédit 289 €, assurance 62 €, essence, entretien. Elle sort de l’argent. L’appartement à acheter : mensualité, taxe foncière, charges de copropriété. Il en sortira aussi, chaque mois, pendant vingt-cinq ans.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Les banquiers les rangent dans tes actifs parce qu’ils valent quelque chose sur le papier. Pour ton cashflow, ce sont des passifs. Le jour où tu les vendras, on en reparlera. D’ici là, ils te coûtent. »</p></div>
+  </div>
+  <h3>La définition qui change tout</h3>
+  <div class="learn"><h4>Kiyosaki, en deux phrases</h4><ul><li><b>Un actif</b> met de l’argent dans ta poche, chaque mois, sans que tu travailles.</li><li><b>Un passif</b> sort de l’argent de ta poche, chaque mois.</li></ul></div>
+  <p>La comptabilité classique mesure ce qu’une chose <i>vaut</i>. Cette définition mesure ce qu’elle <i>fait</i> à ton compte en banque. La différence explique pourquoi tant de gens « riches sur le papier » sont fauchés le 27.</p>
+  <div class="tbl"><table><thead><tr><th>Ce que tu possèdes</th><th>Vaut quelque chose ?</th><th>Effet chaque mois</th><th>Pour ton cashflow</th></tr></thead><tbody>
+    <tr><td>Résidence principale avec crédit</td><td>Oui</td><td>Mensualité, taxe, charges</td><td><b>Passif</b> (tant que tu y habites)</td></tr>
+    <tr><td>Voiture</td><td>Oui, puis de moins en moins</td><td>Crédit, assurance, essence</td><td><b>Passif</b></td></tr>
+    <tr><td>Studio loué 520 €, crédit et charges 430 €</td><td>Oui</td><td>+90 €</td><td><b>Actif</b></td></tr>
+    <tr><td>Studio loué 520 €, crédit et charges 640 €</td><td>Oui</td><td>−120 €</td><td><b>Passif</b> qui espère une plus-value</td></tr>
+    <tr><td>ETF qui verse des dividendes</td><td>Oui</td><td>+ dividendes</td><td><b>Actif</b></td></tr>
+    <tr><td>Formation en ligne qui se vend seule</td><td>Peu sur le papier</td><td>+ ventes</td><td><b>Actif</b></td></tr>
+  </tbody></table></div>
+  <p>Le studio apparaît deux fois. Le même bien peut être un actif ou un passif selon son prix d’achat, son loyer et son financement. C’est le chiffre du bas, le cashflow mensuel, qui tranche.</p>
+  <h3>Le schéma des trois familles</h3>
+  <p>Solène dessine trois flèches sur une nappe en papier. Les pauvres : le salaire entre, les dépenses sortent, il ne reste rien. La classe moyenne : le salaire entre, il sert à acheter des passifs qu’elle prend pour des actifs (une maison plus grande, une voiture neuve), et les crédits mangent le reste. Les riches : le salaire, ou les premiers revenus, achètent des actifs ; les actifs produisent des revenus ; ces revenus achètent d’autres actifs.</p>
+  <div class="todo"><h4>À toi</h4><ol><li>Liste tout ce que tu possèdes et tout ce que tu dois.</li><li>À côté de chaque ligne, écris ce qu’elle fait à ton compte chaque mois : + ou −.</li><li>Entoure les vrais actifs. Combien en as-tu ?</li></ol></div>
+</template>
+
+<template id="c-ch3">
+  <div class="chap-num">Chapitre 3</div>
+  <h2>La feuille qui dit la vérité</h2>
+  <p class="lede">Où Léo remplit sa première feuille financière et découvre son vrai chiffre.</p>
+  <div class="story">
+    <p>Dans le jeu, chaque joueur reçoit une feuille. Solène en tend une vierge à Léo. « Remplis-la avec ta vraie vie. Pas le jeu. Toi. »</p>
+    <p>Il lui faut une heure et trois relevés bancaires. À la fin, il a quatre cases remplies et un chiffre souligné deux fois en bas à droite : <span class="num">+64 €</span>. C’est ce qu’il lui reste réellement chaque mois, en moyenne, une fois tout payé. Pas les 450 € d’augmentation qu’il croyait avoir. Soixante-quatre.</p>
+  </div>
+  <h3>Les quatre cases</h3>
+  <p>La feuille financière de Kiyosaki tient sur une page. En haut, le <b>compte de résultat</b> : ce qui entre et ce qui sort chaque mois. En bas, le <b>bilan</b> : ce que tu possèdes et ce que tu dois. Voici celle de Léo.</p>
+  <div class="sheet" role="table" aria-label="Feuille financière de Léo, exemple">
+    <div class="hd">Compte de résultat · par mois</div>
+    <div class="cell"><h5>Revenus</h5>
+      <div class="ln"><span>Salaire net</span><b>2 150</b></div><div class="ln"><span>Freelance (net de cotisations)</span><b>310</b></div><div class="ln"><span>Revenus passifs</span><b>4</b></div><div class="ln"><span><b>Total</b></span><b>2 464</b></div></div>
+    <div class="cell"><h5>Dépenses</h5>
+      <div class="ln"><span>Loyer et charges</span><b>820</b></div><div class="ln"><span>Crédit voiture</span><b>289</b></div><div class="ln"><span>Courses, transport, sorties</span><b>890</b></div><div class="ln"><span>Abonnements, assurances, impôt</span><b>401</b></div><div class="ln"><span><b>Total</b></span><b>2 400</b></div><div class="ln pay"><span><b>Cashflow (PAYDAY)</b></span><b>+64</b></div></div>
+    <div class="hd">Bilan · ce que je possède et ce que je dois</div>
+    <div class="cell"><h5>Actifs</h5><div class="ln"><span>Livret A</span><b>1 900</b></div><div class="ln"><span>Actions, ETF</span><b>0</b></div><div class="ln"><span>Immobilier locatif</span><b>0</b></div></div>
+    <div class="cell"><h5>Passifs</h5><div class="ln"><span>Crédit voiture</span><b>9 800</b></div><div class="ln"><span>Découvert moyen</span><b>150</b></div></div>
+  </div>
+  <p>Tout le jeu consiste à faire bouger cette feuille dans un sens précis : remplir la case Actifs, qui fait grossir les revenus passifs, jusqu’à ce qu’ils dépassent le total des dépenses.</p>
+  <div class="learn"><h4>Ce que Léo a compris</h4><ul><li>Le chiffre qui compte est le cashflow, pas le salaire.</li><li>Un actif se voit deux fois sur la feuille : dans le bilan (ce qu’il vaut) et dans les revenus (ce qu’il rapporte).</li><li>Une feuille remplie une fois ne sert à rien. Remplie chaque mois, elle montre la direction.</li></ul></div>
+  <div class="todo"><h4>À toi</h4><p>Remplis ta propre feuille dans l’application de suivi (chapitre 9) ou sur papier. Garde ton chiffre de cashflow : on va le faire grandir.</p></div>
+</template>
+
+<template id="c-ch4">
+  <div class="chap-num">Chapitre 4</div>
+  <h2>Ne mange pas tes graines</h2>
+  <p class="lede">Où Léo apprend la différence entre vivre de son capital et vivre de ses fruits.</p>
+  <div class="story">
+    <p>Solène a un potager sur son balcon. Elle montre à Léo un sachet de graines de tomates. « Mon grand-père disait : une année de famine, la pire erreur, c’est de manger les graines. Tu manges bien cette année. L’année suivante, tu n’as plus rien à planter. »</p>
+    <p>Puis elle lui raconte son ancien collègue, Marco, qui a reçu 80 000 € d’héritage à 40 ans. Une cuisine neuve, deux beaux voyages, un SUV, un petit prêt à sa sœur. Cinq ans plus tard, il reste 6 000 €. Marco n’a rien fait d’absurde. Il a seulement vécu sur le capital au lieu de vivre sur ce que le capital produit.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Si Marco avait placé ses 80 000 € à 4 % net, ça lui faisait 266 € par mois, pour toujours. Il aurait pu dépenser ces 266 € chaque mois sans jamais toucher aux 80 000. Les graines restaient en terre, il mangeait les tomates. »</p></div>
+  </div>
+  <h3>Trois règles de jardinier</h3>
+  <div class="learn"><h4>Les principes</h4><ul>
+    <li><b>Paie-toi en premier.</b> Le jour où le salaire tombe, un virement automatique part vers ton capital, avant le loyer, avant les courses. Même 50 €. Ce qui reste se dépense.</li>
+    <li><b>Capitalise.</b> Les revenus de tes actifs (loyers nets, dividendes, intérêts) sont réinvestis tant que tu es dans la course. C’est ce réinvestissement qui crée l’effet boule de neige.</li>
+    <li><b>Vis des fruits, jamais du capital.</b> Le capital est l’arbre. Tu ne dépenses que ce qu’il produit. Un ordre de grandeur souvent utilisé : retirer environ 3 à 4 % par an d’un portefeuille diversifié permet de le préserver sur la durée, sans garantie.</li></ul></div>
+  <p>L’intérêt composé est le moteur. Chaque euro gagné par ton capital se met lui-même à travailler. Au début, l’effet est invisible. Après dix ou quinze ans, il devient la force principale.</p>
+  <div class="calc" id="calc-ci"><h4>Calculateur · L’effet boule de neige</h4>
+    <div class="fields"><label for="ci-m">Épargne par mois (€)<input id="ci-m" type="number" inputmode="decimal" value="200" min="0"></label><label for="ci-y">Durée (années)<input id="ci-y" type="number" inputmode="numeric" value="20" min="1" max="50"></label><label for="ci-r">Rendement net annuel (%)<input id="ci-r" type="number" inputmode="decimal" value="5" step="0.5" min="0" max="15"></label></div>
+    <svg id="ci-svg" viewBox="0 0 640 210" role="img" aria-label="Évolution du capital et des versements cumulés"></svg>
+    <div class="out"><div><span>Tu auras versé</span><b id="ci-in">48 000 €</b></div><div><span>Capital final</span><b id="ci-out">—</b></div><div><span>Fruits possibles à 4 % / mois</span><b id="ci-fr">—</b></div></div>
+    <p class="fb" style="margin:0">Hypothèse de rendement constant, avant impôts. Les marchés réels montent et descendent.</p></div>
+  <div class="todo"><h4>À toi</h4><ol><li>Programme un virement automatique le lendemain de ta paie. Choisis un montant qui pique un peu, sans te mettre à découvert.</li><li>Dirige-le vers un compte qui ne sert qu’à investir.</li><li>Promets-toi une chose : les revenus de ce compte sont réinvestis, pas dépensés, tant que tu n’es pas sorti de la course.</li></ol></div>
+</template>
+
+<template id="c-ch5">
+  <div class="chap-num">Chapitre 5</div>
+  <h2>Les arbres à fruits</h2>
+  <p class="lede">Où Léo fait l’inventaire des façons de créer des revenus passifs.</p>
+  <div class="story">
+    <p>Léo demande enfin la question qui le travaille depuis trois semaines : « Concrètement, Solène, tu vis de quoi ? » Elle sort un carnet. Trois appartements loués, un portefeuille d’ETF, des parts dans la laverie d’un ami, et un petit livre numérique sur la plomberie pour débutants qui se vend une trentaine de fois par mois.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Je n’ai pas tout fait d’un coup. Le premier appartement m’a pris quatre ans d’épargne. Ensuite, ses loyers et ma capacité d’emprunt ont fait le reste. Commence par l’arbre que tu sais faire pousser. »</p></div>
+  </div>
+  <h3>Les quatre quadrants</h3>
+  <p>Kiyosaki classe les manières de gagner sa vie en quatre cases. À gauche, on échange son temps contre de l’argent. À droite, ce sont des systèmes et de l’argent qui travaillent.</p>
+  <div class="tbl"><table><thead><tr><th>Quadrant</th><th>Qui</th><th>D’où vient l’argent</th><th>Si tu t’arrêtes</th></tr></thead><tbody>
+    <tr><td><b>E</b> · Employé</td><td>Salarié</td><td>Ton temps, pour un employeur</td><td>Le revenu s’arrête</td></tr>
+    <tr><td><b>S</b> · Indépendant</td><td>Freelance, artisan, coach</td><td>Ton temps, pour tes clients</td><td>Le revenu s’arrête</td></tr>
+    <tr><td><b>B</b> · Propriétaire d’entreprise</td><td>Dirigeant d’un système</td><td>Une équipe et des process</td><td>Le revenu continue</td></tr>
+    <tr><td><b>I</b> · Investisseur</td><td>Détenteur d’actifs</td><td>Ton capital</td><td>Le revenu continue</td></tr>
+  </tbody></table></div>
+  <h3>Les arbres que tu peux planter</h3>
+  <div class="tbl"><table><thead><tr><th>Source</th><th>Mise de départ</th><th>Travail au début</th><th>Ensuite</th><th>Risques principaux</th></tr></thead><tbody>
+    <tr><td>Immobilier locatif</td><td>Apport ou crédit à 100 %</td><td>Recherche, travaux, location</td><td>Gestion, quelques heures par mois</td><td>Vacance, impayés, travaux</td></tr>
+    <tr><td>ETF et actions à dividendes</td><td>Dès 50 € par mois</td><td>Faible</td><td>Quasi nul</td><td>Baisse des marchés</td></tr>
+    <tr><td>Produits numériques (ebook, formation, modèles)</td><td>Ton temps, peu d’argent</td><td>Fort : créer, puis trouver des clients</td><td>Mise à jour, marketing</td><td>Ne pas trouver de clients</td></tr>
+    <tr><td>Entreprise systématisée</td><td>Variable</td><td>Très fort</td><td>Pilotage</td><td>Échec du modèle</td></tr>
+    <tr><td>Droits d’auteur, licences</td><td>Ton temps</td><td>Fort</td><td>Nul</td><td>Revenu irrégulier</td></tr>
+    <tr><td>Livrets et fonds euros</td><td>Dès 10 €</td><td>Nul</td><td>Nul</td><td>Rendement sous l’inflation</td></tr>
+  </tbody></table></div>
+  <p>Les revenus semi-passifs méritent une catégorie à part. Un coaching de groupe, une prestation que tu aimes faire et que tu peux déléguer en partie, une boutique en ligne qui demande deux heures par semaine. Ils ne te sortent pas de la course seuls, mais ils accélèrent la construction du capital.</p>
+  <div class="learn"><h4>Cashflow ou plus-value ?</h4><p>Un investisseur « cashflow » achète ce qui rapporte chaque mois. Un investisseur « plus-value » parie sur une hausse future du prix. Pour sortir de la course, seul le cashflow compte. La plus-value est un bonus, pas un plan.</p></div>
+  <div class="todo"><h4>À toi</h4><p>Choisis ton premier arbre parmi ceux que tu sais déjà faire pousser. Léo, graphiste, a choisi deux arbres : un pack de modèles graphiques à vendre en ligne, et un ETF monde alimenté chaque mois.</p></div>
+</template>
+
+<template id="c-ch6">
+  <div class="chap-num">Chapitre 6</div>
+  <h2>Choisir sa forme</h2>
+  <p class="lede">Où Léo découvre que le même euro gagné ne laisse pas la même somme selon le statut.</p>
+  <div class="story">
+    <p>Les missions freelance de Léo marchent. Il facture 1 400 € par mois en moyenne, déclarés en micro-entreprise. Il se demande s’il doit « passer en société ». Solène lui présente Nadia, son expert-comptable, autour d’un café. Nadia dessine un tableau sur une serviette et dit une phrase que Léo note : « Le statut, c’est une tuyauterie. Il décide combien d’eau arrive à ton robinet, et combien part à l’impôt et aux cotisations. »</p>
+  </div>
+  <h3>Salarié</h3>
+  <p>Tes cotisations sont prélevées avant que tu voies ton salaire. Côté salarié, environ 22 % du brut part en cotisations et CSG ; l’employeur en paie environ autant en plus. L’impôt sur le revenu est prélevé à la source. Tu ne choisis rien, mais tu es très bien protégé : chômage, retraite, arrêts maladie.</p>
+  <h3>Micro-entreprise</h3>
+  <p>Le régime le plus simple. Tu paies des cotisations sur ton chiffre d’affaires encaissé, sans pouvoir déduire tes frais. L’impôt est calculé après un abattement forfaitaire censé représenter tes frais.</p>
+  <div class="tbl"><table><thead><tr><th>Activité</th><th>Plafond de CA (2026-2028)</th><th>Cotisations <span data-p="year" data-f="num">2026</span></th><th>Abattement impôt</th><th>Versement libératoire</th></tr></thead><tbody>
+    <tr><td>Vente de marchandises, hébergement</td><td class="n"><span data-p="micro.vente.plafond" data-f="eur">203 100 €</span></td><td class="n"><span data-p="micro.vente.urssaf" data-f="pct">12,3 %</span></td><td class="n"><span data-p="micro.vente.abatt" data-f="pct">71 %</span></td><td class="n"><span data-p="micro.vente.vl" data-f="pct">1 %</span></td></tr>
+    <tr><td>Prestations de services commerciales ou artisanales (BIC)</td><td class="n"><span data-p="micro.bics.plafond" data-f="eur">83 600 €</span></td><td class="n"><span data-p="micro.bics.urssaf" data-f="pct">21,2 %</span></td><td class="n"><span data-p="micro.bics.abatt" data-f="pct">50 %</span></td><td class="n"><span data-p="micro.bics.vl" data-f="pct">1,7 %</span></td></tr>
+    <tr><td>Professions libérales (BNC, SSI)</td><td class="n"><span data-p="micro.bnc.plafond" data-f="eur">83 600 €</span></td><td class="n"><span data-p="micro.bnc.urssaf" data-f="pct">25,6 %</span></td><td class="n"><span data-p="micro.bnc.abatt" data-f="pct">34 %</span></td><td class="n"><span data-p="micro.bnc.vl" data-f="pct">2,2 %</span></td></tr>
+    <tr><td>Professions libérales réglementées (CIPAV)</td><td class="n"><span data-p="micro.cipav.plafond" data-f="eur">83 600 €</span></td><td class="n"><span data-p="micro.cipav.urssaf" data-f="pct">23,2 %</span></td><td class="n"><span data-p="micro.cipav.abatt" data-f="pct">34 %</span></td><td class="n"><span data-p="micro.cipav.vl" data-f="pct">2,2 %</span></td></tr>
+  </tbody></table></div>
+  <p>La franchise de TVA s’arrête plus bas : <span data-p="tva.services" data-f="eur">37 500 €</span> pour les services, <span data-p="tva.vente" data-f="eur">85 000 €</span> pour la vente. Le versement libératoire remplace l’impôt sur le revenu par un petit pourcentage du CA, si le revenu fiscal du foyer reste sous un plafond. Il est intéressant quand ton taux d’imposition est déjà élevé.</p>
+  <div class="learn"><h4>Quand la micro devient chère</h4><p>Si tes frais réels dépassent l’abattement (beaucoup de matériel, de déplacements, de sous-traitance), tu paies des cotisations et de l’impôt sur de l’argent que tu as déjà dépensé. C’est le moment de regarder le régime réel ou une société.</p></div>
+  <h3>Entreprise individuelle au réel, EURL et SASU</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>EI au réel</th><th>EURL / SARL à l’IS</th><th>SASU / SAS</th></tr></thead><tbody>
+    <tr><td>Ton statut social</td><td>Travailleur indépendant (TNS)</td><td>Gérant majoritaire TNS</td><td>Président assimilé salarié</td></tr>
+    <tr><td>Cotisations sur ta rémunération</td><td>Environ 40 à 45 % du revenu net</td><td>Environ 40 à 45 % du net</td><td>Environ 75 à 80 % du net (protection proche d’un salarié, sans chômage)</td></tr>
+    <tr><td>Impôt sur le bénéfice</td><td>Impôt sur le revenu, après déduction des frais réels</td><td>IS : <span data-p="is.reduit" data-f="pct">15 %</span> jusqu’à <span data-p="is.seuil" data-f="eur">42 500 €</span>, <span data-p="is.normal" data-f="pct">25 %</span> au-delà</td><td>IS : <span data-p="is.reduit" data-f="pct">15 %</span> jusqu’à <span data-p="is.seuil" data-f="eur">42 500 €</span>, <span data-p="is.normal" data-f="pct">25 %</span> au-delà</td></tr>
+    <tr><td>Dividendes</td><td>Pas de dividendes</td><td>Flat tax, mais cotisations sociales au-delà de 10 % du capital</td><td>Flat tax à <span data-p="capital.pfu" data-f="pct">31,4 %</span>, sans cotisations</td></tr>
+    <tr><td>Pour qui</td><td>Frais importants, activité simple</td><td>Activité stable qui veut payer peu de cotisations</td><td>Dirigeant qui veut se payer en dividendes ou lever des fonds</td></tr>
+  </tbody></table></div>
+  <p>La société à l’IS permet une chose que Kiyosaki adore : laisser l’argent dans la structure, taxé à <span data-p="is.reduit" data-f="pct">15 %</span>, pour qu’il achète des actifs. Tu ne te verses que ce dont tu as besoin pour vivre. Le reste capitalise dans l’entreprise. C’est la version française de « les riches font travailler leur argent avant de payer l’impôt sur ce qu’ils en sortent ».</p>
+  <div class="warn"><h4>Nadia insiste</h4><p>Créer une société coûte du temps et de l’argent : comptabilité obligatoire, frais d’expert-comptable, formalités. En dessous de 30 000 à 40 000 € de bénéfice, la micro reste souvent la plus rentable. Fais faire une simulation chiffrée avant de changer.</p></div>
+  <div class="todo"><h4>À toi</h4><p>Calcule ce qui te reste réellement pour 100 € facturés dans ton statut actuel. Léo, en micro BNC : 100 € facturés, 25,60 € de cotisations, 2,20 € d’impôt libératoire. Il lui reste 72,20 € avant ses frais.</p></div>
+</template>
+
+<template id="c-ch7">
+  <div class="chap-num">Chapitre 7</div>
+  <h2>Les murs qui paient</h2>
+  <p class="lede">Où Léo achète son premier studio et apprend à choisir son régime fiscal.</p>
+  <div class="story">
+    <p>Dix-huit mois après le premier dimanche, Léo a 11 000 € de côté. Solène l’emmène visiter un studio de 24 m² à Villeurbanne, près d’une fac. Prix : 98 000 €. Elle le fait chiffrer avant même de regarder la cuisine.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« On n’achète pas un appartement. On achète un cashflow. Dis-moi ce qui entre et ce qui sort chaque mois, et je te dirai si c’est un actif. »</p></div>
+    <p>Loyer meublé possible : 560 €. Crédit sur 20 ans à 3,5 % pour 98 000 € plus les frais : 640 €. Charges, taxe foncière, assurance : 95 €. Résultat : −175 € par mois. Un passif. Léo est déçu. Solène sourit. « Maintenant, négocie. »</p>
+    <p>Trois semaines plus tard, le vendeur accepte 86 000 €. Léo met 9 000 € d’apport. Mensualité : 495 €. Avec 560 € de loyer et 95 € de charges, il reste −30 € par mois avant impôt. Puis il choisit le bon régime fiscal, et l’impôt sur ce studio tombe à zéro pour plusieurs années. Il meuble avec 3 500 €, loue à un étudiant en master, et augmente le loyer à 590 € à la relocation suivante. Son studio devient un actif.</p>
+  </div>
+  <h3>L’effet de levier</h3>
+  <p>Avec 9 000 € d’apport, Léo contrôle un bien de 86 000 €. Le loyer de son locataire rembourse son crédit. Chaque mois, une partie de la mensualité est du capital qui devient le sien. C’est la raison pour laquelle l’immobilier est l’arbre préféré de Kiyosaki : la banque finance l’achat d’un actif, à condition que le cashflow reste positif ou proche de zéro.</p>
+  <h3>Location vide (nue) : revenus fonciers</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>Micro-foncier</th><th>Régime réel (formulaire 2044)</th></tr></thead><tbody>
+    <tr><td>Condition</td><td>Loyers bruts du foyer ≤ <span data-p="foncier.microPlafond" data-f="eur">15 000 €</span> par an</td><td>Obligatoire au-delà, sur option en dessous (engagement 3 ans)</td></tr>
+    <tr><td>Ce qui est déduit</td><td>Abattement forfaitaire de <span data-p="foncier.microAbatt" data-f="pct">30 %</span></td><td>Charges réelles : intérêts d’emprunt, taxe foncière, assurance, copropriété, travaux, 20 € de frais par local</td></tr>
+    <tr><td>Où déclarer</td><td>Case 4BE de la 2042</td><td>Formulaire 2044, puis case 4BA (bénéfice) ou 4BB / 4BC (déficit)</td></tr>
+    <tr><td>Déficit foncier</td><td>Impossible</td><td>Imputable sur le revenu global jusqu’à <span data-p="foncier.deficit" data-f="eur">10 700 €</span> par an (hors intérêts)</td></tr>
+    <tr><td>Imposition</td><td colspan="2">Barème de l’impôt sur le revenu + prélèvements sociaux <span data-p="foncier.ps" data-f="pct">17,2 %</span></td></tr>
+  </tbody></table></div>
+  <h3>Location meublée : LMNP et LMP</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>Micro-BIC</th><th>Réel</th></tr></thead><tbody>
+    <tr><td>Meublé longue durée</td><td>Abattement <span data-p="meuble.longueAbatt" data-f="pct">50 %</span>, jusqu’à <span data-p="meuble.longuePlafond" data-f="eur">83 600 €</span> de recettes</td><td rowspan="3">Charges réelles + <b>amortissement</b> du bien (hors terrain) et du mobilier. Souvent zéro impôt pendant des années.</td></tr>
+    <tr><td>Meublé de tourisme classé, chambre d’hôtes</td><td>Abattement <span data-p="meuble.classeAbatt" data-f="pct">50 %</span>, jusqu’à <span data-p="meuble.classePlafond" data-f="eur">83 600 €</span></td></tr>
+    <tr><td>Meublé de tourisme non classé</td><td>Abattement <span data-p="meuble.nonClasseAbatt" data-f="pct">30 %</span>, jusqu’à <span data-p="meuble.nonClassePlafond" data-f="eur">15 000 €</span></td></tr>
+    <tr><td>À la revente</td><td>Plus-value des particuliers</td><td>Depuis 2025, les amortissements déduits sont réintégrés dans le calcul de la plus-value</td></tr>
+  </tbody></table></div>
+  <p>Tu restes loueur non professionnel (LMNP) tant que tes recettes de meublé ne dépassent pas 23 000 € par an, ou restent inférieures aux autres revenus professionnels du foyer. Au-delà des deux seuils, tu deviens loueur professionnel (LMP), avec cotisations sociales et un déficit imputable sur le revenu global.</p>
+  <h3>Et la SCI ?</h3>
+  <p>Une SCI permet d’acheter à plusieurs et de transmettre plus facilement. À l’impôt sur le revenu, elle suit les règles de la location nue. À l’IS, elle amortit le bien comme une société, mais la revente est plus taxée et la comptabilité obligatoire. C’est un outil de structure, pas un raccourci fiscal.</p>
+  <div class="warn"><h4>Le diagnostic énergétique</h4><p>Un logement classé G ne peut plus être mis en location depuis 2025 ; ce sera le cas des F en 2028 et des E en 2034. Regarde le DPE avant le prix.</p></div>
+  <div class="learn"><h4>Ce que Léo a compris</h4><ul><li>Un bien se juge à son cashflow mensuel, calculé avant d’acheter.</li><li>Le prix se gagne à l’achat : chaque 1 000 € négocié, c’est environ 6 € de mensualité en moins pendant 20 ans.</li><li>Le régime fiscal fait partie du calcul. En meublé au réel, l’amortissement efface souvent l’impôt pendant des années.</li></ul></div>
+</template>
+
+<template id="c-ch8">
+  <div class="chap-num">Chapitre 8</div>
+  <h2>Le grain et la taxe</h2>
+  <p class="lede">Où Léo range ses placements dans les bonnes enveloppes.</p>
+  <div class="story">
+    <p>Léo verse 200 € par mois sur un ETF monde. Il l’a acheté sur un compte-titres ordinaire, parce que c’était le premier bouton de son appli. Solène grimace. « Le même ETF, dans un PEA, aurait coûté moins d’impôt à la sortie. L’enveloppe, c’est le pot dans lequel tu plantes. Certains pots laissent l’État cueillir moins. »</p>
+  </div>
+  <h3>La flat tax de <span data-p="year" data-f="num">2026</span></h3>
+  <p>Les dividendes, intérêts et plus-values de placements sont taxés par défaut au prélèvement forfaitaire unique (flat tax) : <b><span data-p="capital.pfu" data-f="pct">31,4 %</span></b> en <span data-p="year" data-f="num">2026</span>, soit <span data-p="capital.ir" data-f="pct">12,8 %</span> d’impôt et <span data-p="capital.ps" data-f="pct">18,6 %</span> de prélèvements sociaux. Tu peux choisir à la place le barème progressif si ton taux d’imposition est faible.</p>
+  <div class="tbl"><table><thead><tr><th>Enveloppe</th><th>Pour quoi</th><th>Fiscalité des gains</th></tr></thead><tbody>
+    <tr><td>Livret A, LDDS, LEP</td><td>Épargne de précaution</td><td>Exonérés</td></tr>
+    <tr><td>PEA</td><td>Actions et ETF européens ou éligibles, jusqu’à 150 000 € de versements</td><td>Après 5 ans : pas d’impôt sur le revenu, seulement les prélèvements sociaux</td></tr>
+    <tr><td>Assurance-vie</td><td>Fonds euros, ETF, transmission</td><td>Après 8 ans : abattement de 4 600 € de gains par an (9 200 € pour un couple) ; épargnée par la hausse de CSG de 2026</td></tr>
+    <tr><td>Compte-titres ordinaire</td><td>Tout le reste (actions américaines, obligations…)</td><td>Flat tax 31,4 %</td></tr>
+    <tr><td>PER</td><td>Retraite</td><td>Versements déductibles du revenu imposable, sortie imposée</td></tr>
+  </tbody></table></div>
+  <div class="learn"><h4>L’ordre de Léo</h4><ol style="margin:0;padding-left:1.2em;display:grid;gap:6px"><li>3 à 6 mois de dépenses sur un livret : le matelas qui évite de vendre au mauvais moment.</li><li>Un PEA pour l’ETF monde, alimenté chaque mois.</li><li>L’immobilier quand l’apport et la capacité d’emprunt sont là.</li><li>Le reste ensuite, selon les opportunités.</li></ol></div>
+  <div class="todo"><h4>À toi</h4><p>Vérifie dans quelle enveloppe sont tes placements. Si tu n’as pas de PEA, ouvre-en un même avec 10 € : c’est la date d’ouverture qui fait courir les 5 ans.</p></div>
+</template>
+
+<template id="c-ch9">
+  <div class="chap-num">Chapitre 9</div>
+  <h2>Le tableau de bord</h2>
+  <p class="lede">Où Léo transforme sa feuille de papier en application, et sa routine en jeu.</p>
+  <div class="story">
+    <p>Au début, Léo remplissait sa feuille à la main le dernier dimanche du mois. Au troisième mois, il a oublié. Au quatrième, il a perdu la feuille. Solène lui a installé une application sur son téléphone. « C’est le jeu, avec tes vrais chiffres. Tu vois ta jauge de sortie bouger. Et quand elle bouge, tu as envie de la faire bouger encore. »</p>
+  </div>
+  <h3>Ce que fait l’application</h3>
+  <div class="tbl"><table><thead><tr><th>Écran</th><th>Ce que tu y fais</th></tr></thead><tbody>
+    <tr><td>Feuille Rat Race</td><td>Tes quatre cadrans (recettes, dépenses, actifs, passifs) et la jauge qui mesure tes revenus passifs face à tes dépenses.</td></tr>
+    <tr><td>Bilan complet</td><td>La feuille de Kiyosaki pour la période choisie, exportable en PDF : cashflow passif, semi-passif et trésorerie.</td></tr>
+    <tr><td>Fast Track</td><td>Ton rêve, ton objectif, et le simulateur « Générer du cash » : combien de ventes ou de clients pour couvrir tes dépenses, et le graphique de ton chiffre d’affaires face à l’objectif.</td></tr>
+    <tr><td>Immobilier</td><td>Chaque bien avec son cashflow réel, son crédit qui baisse à chaque échéance et sa rentabilité.</td></tr>
+    <tr><td>Placements</td><td>Actions, ETF et cryptos avec leur plus-value et leur répartition.</td></tr>
+    <tr><td>Contrats, URSSAF, Impôts</td><td>Les prélèvements qui reviennent, les cotisations à provisionner, et l’aide à la déclaration avec les numéros de cases.</td></tr>
+  </tbody></table></div>
+  <h3>Installer et garder ses données chez soi</h3>
+  <ol>
+    <li><b>Récupère le fichier de l’application</b> (un seul fichier HTML) et range-le dans un dossier dédié de ton ordinateur ou de ton téléphone.</li>
+    <li><b>Ouvre-le dans ton navigateur</b>, par exemple Chrome, Firefox ou Safari. Aucune inscription, aucun serveur : tes données restent dans ton navigateur, sur ton appareil.</li>
+    <li><b>Ajoute-le à l’écran d’accueil</b> de ton téléphone pour l’ouvrir comme une appli.</li>
+    <li><b>Sauvegarde chaque mois.</b> Dans Réglages, « Exporter une sauvegarde » crée un fichier JSON avec toutes tes données. Range-le sur une clé USB ou dans ton cloud personnel. Pour changer d’appareil, utilise « Importer ».</li>
+  </ol>
+  <div class="warn"><h4>Tes données, ta responsabilité</h4><p>Vider le cache du navigateur efface les données locales. La sauvegarde mensuelle est ta seule assurance. Ne saisis jamais tes identifiants ou mots de passe bancaires dans l’application : elle n’en a pas besoin.</p></div>
+  <h3>La routine du PAYDAY</h3>
+  <p>Dans le jeu, chaque passage sur la case PAYDAY déclenche le même geste : tu encaisses ton cashflow. Léo a gardé ce rituel, un quart d’heure le premier dimanche du mois.</p>
+  <ol>
+    <li>Saisir ou vérifier les recettes et dépenses du mois écoulé.</li>
+    <li>Regarder la jauge : a-t-elle bougé ? Pourquoi ?</li>
+    <li>Décider d’une action pour le mois : une dépense à couper, un prix à augmenter, une vente à lancer, un placement à faire.</li>
+    <li>Exporter la sauvegarde.</li>
+  </ol>
+  <h3>Pourquoi ça donne envie d’entreprendre</h3>
+  <p>L’application rend visible ce qui était flou. Quand Léo a vu que 30 ventes de son pack de modèles à 29 € couvraient sa mensualité de voiture, il a passé ses soirées à écrire sa page de vente plutôt qu’à scroller. Chaque vente faisait monter la courbe noire au-dessus de la ligne d’objectif. Une jauge qui monte motive plus qu’une résolution de janvier.</p>
+  <div class="todo"><h4>À toi</h4><ol><li>Installe l’application et saisis tes dépenses du mois dernier.</li><li>Ajoute dans Fast Track une activité que tu pourrais vendre, avec son prix et un objectif mensuel.</li><li>Note dans ton agenda ton premier PAYDAY.</li></ol></div>
+</template>
+
+<template id="c-ch10">
+  <div class="chap-num">Chapitre 10</div>
+  <h2>La piste extérieure</h2>
+  <p class="lede">Où Léo pose son pion sur la grande piste, quatre ans et demi après le premier dimanche.</p>
+  <div class="story">
+    <p>Quatre ans et demi plus tard, Léo a toujours sa feuille. Il a revendu sa voiture et en roule une plus vieille, payée comptant. Son pack de modèles graphiques s’est décliné en trois produits, qui rapportent 640 € nets par mois en moyenne. Son studio de Villeurbanne dégage 140 € après crédit et charges, et un deuxième, à Saint-Étienne, 210 €. Son PEA verse 95 € de dividendes par mois, qu’il réinvestit.</p>
+    <p>Il a baissé ses dépenses à 1 950 €. Ses revenus passifs et semi-passifs atteignent 1 085 €. Il n’est pas encore sorti. Mais il a réduit son temps à l’agence à quatre jours par semaine, et la jauge a dépassé 55 %.</p>
+    <div class="dialog"><p class="who">Solène</p><p>« Tu vois la différence avec le premier soir ? Tu as toujours un salaire. Mais il ne paie plus ta vie, il paie tes actifs. C’est ça, la piste extérieure qui approche. »</p></div>
+    <p>Ce dimanche-là, c’est Léo qui a sorti le plateau. Sa sœur était venue avec ses relevés bancaires et la même tête que lui, cinq ans plus tôt, le 27 du mois.</p>
+  </div>
+  <h3>Ton plan des 90 premiers jours</h3>
+  <div class="tbl"><table><thead><tr><th>Quand</th><th>Action</th><th>Résultat attendu</th></tr></thead><tbody>
+    <tr><td>Semaine 1</td><td>Remplir ta feuille : revenus, dépenses, actifs, passifs</td><td>Ton vrai cashflow et ta couverture</td></tr>
+    <tr><td>Semaine 2</td><td>Virement automatique « paie-toi en premier »</td><td>Un capital qui grossit sans y penser</td></tr>
+    <tr><td>Semaine 3</td><td>Couper ou renégocier 3 dépenses (assurances, abonnements, banque)</td><td>+50 à 150 € de cashflow</td></tr>
+    <tr><td>Mois 2</td><td>Choisir et planter ton premier arbre (ETF sur PEA, produit, prestation)</td><td>Un premier revenu passif ou semi-passif</td></tr>
+    <tr><td>Mois 3</td><td>Vérifier ton statut et tes enveloppes fiscales</td><td>Moins d’impôt sur ce que tu gagnes</td></tr>
+    <tr><td>Chaque mois</td><td>PAYDAY : 15 minutes de tableau de bord, une décision</td><td>Une jauge qui monte</td></tr>
+  </tbody></table></div>
+  <div class="learn"><h4>Les sept principes à garder</h4><ol style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+    <li>On sort de la course quand les revenus passifs dépassent les dépenses.</li>
+    <li>Un actif met de l’argent dans ta poche. Un passif en sort.</li>
+    <li>Le chiffre qui compte est le cashflow, pas le salaire.</li>
+    <li>Paie-toi en premier, puis capitalise les fruits.</li>
+    <li>Vis des fruits, jamais du capital.</li>
+    <li>Le statut et l’enveloppe fiscale font partie du rendement.</li>
+    <li>Mesure chaque mois : ce qui est mesuré progresse.</li></ol></div>
+</template>
+
+<template id="c-carnet">
+  <div class="chap-num">Ton carnet</div>
+  <h2>Mon carnet</h2>
+  <p class="lede">Tout ce que tu as noté en lisant, au même endroit.</p>
+  <p>À chaque chapitre, un encadré « Ton carnet » t’a posé des questions sur ta situation : dépenses, revenus, crédits, biens, placements, statut. Tes réponses sont rassemblées ici. Elles serviront à préremplir l’application de suivi : quand tu l’ouvriras, ta feuille sera déjà commencée.</p>
+  <div class="warn"><h4>Où sont tes réponses ?</h4><p>Uniquement sur cet appareil, dans ce navigateur. Personne d’autre ne les voit, et elles disparaissent si tu effaces les données du navigateur. Tu lis la version papier ? Note les mêmes questions sur une feuille : tu les saisiras directement dans l’application.</p></div>
+  <div id="recap"></div>
+</template>
+<template id="c-annexe">
+  <div class="chap-num">Annexe</div>
+  <h2>Glossaire et chiffres clés 2026</h2>
+  <p class="lede">À garder sous la main pendant ton PAYDAY.</p>
+  <div class="tbl"><table><thead><tr><th>Terme</th><th>Définition</th></tr></thead><tbody>
+    <tr><td>Rat Race</td><td>La boucle travail, revenu, dépenses, dont on ne sort que par les revenus passifs.</td></tr>
+    <tr><td>Fast Track</td><td>La piste extérieure du jeu : la vie une fois sorti, où l’on investit pour réaliser ses rêves.</td></tr>
+    <tr><td>Cashflow</td><td>Ce qui reste chaque mois : revenus moins dépenses.</td></tr>
+    <tr><td>Revenu passif</td><td>Revenu qui arrive sans ton travail du mois : loyers nets, dividendes, intérêts, ventes automatisées.</td></tr>
+    <tr><td>Revenu semi-passif</td><td>Revenu qui demande un peu de ton temps, que tu peux déléguer en partie.</td></tr>
+    <tr><td>Effet de levier</td><td>Acheter un actif avec l’argent de la banque, remboursé par les revenus de l’actif.</td></tr>
+    <tr><td>Amortissement</td><td>Déduction comptable de l’usure d’un bien sur sa durée de vie (location meublée au réel, société).</td></tr>
+    <tr><td>Flat tax (PFU)</td><td>Impôt forfaitaire sur les revenus du capital : <span data-p="capital.pfu" data-f="pct">31,4 %</span> en <span data-p="year" data-f="num">2026</span>.</td></tr>
+  </tbody></table></div>
+  <div class="tbl"><table><thead><tr><th>Chiffre clé <span data-p="year" data-f="num">2026</span></th><th>Valeur</th></tr></thead><tbody>
+    <tr><td>Plafond micro, vente</td><td class="n"><span data-p="micro.vente.plafond" data-f="eur">203 100 €</span></td></tr>
+    <tr><td>Plafond micro, services et libéral</td><td class="n"><span data-p="micro.bnc.plafond" data-f="eur">83 600 €</span></td></tr>
+    <tr><td>Franchise de TVA, services / vente</td><td class="n"><span data-p="tva.services" data-f="eur">37 500 €</span> / <span data-p="tva.vente" data-f="eur">85 000 €</span></td></tr>
+    <tr><td>Micro-foncier, plafond et abattement</td><td class="n"><span data-p="foncier.microPlafond" data-f="eur">15 000 €</span> · <span data-p="foncier.microAbatt" data-f="pct">30 %</span></td></tr>
+    <tr><td>Micro-BIC meublé longue durée</td><td class="n"><span data-p="meuble.longuePlafond" data-f="eur">83 600 €</span> · <span data-p="meuble.longueAbatt" data-f="pct">50 %</span></td></tr>
+    <tr><td>Déficit foncier sur le revenu global</td><td class="n"><span data-p="foncier.deficit" data-f="eur">10 700 €</span> / an</td></tr>
+    <tr><td>IS taux réduit</td><td class="n"><span data-p="is.reduit" data-f="pct">15 %</span> jusqu’à <span data-p="is.seuil" data-f="eur">42 500 €</span></td></tr>
+    <tr><td>Flat tax</td><td class="n"><span data-p="capital.pfu" data-f="pct">31,4 %</span></td></tr>
+    <tr><td>Prélèvements sociaux revenus fonciers</td><td class="n"><span data-p="foncier.ps" data-f="pct">17,2 %</span></td></tr>
+  </tbody></table></div>
+  <div class="warn"><h4>Sources et limites</h4><p>Chiffres vérifiés en 2026 auprès des sources publiques (impots.gouv.fr, economie.gouv.fr, urssaf.fr) et de guides spécialisés. Ils évoluent chaque année avec la loi de finances. Les principes viennent de « Père riche, père pauvre » et du jeu CASHFLOW de Robert Kiyosaki ; les personnages de ce livre sont inventés.</p></div>
+</template>
+
+<script>
+const CH=[
+  {id:'prologue',t:'Le 27 du mois',n:'0'},
+  {id:'ch1',t:'La roue du hamster',n:'1',quiz:[
+    ['Qu’est-ce qui fait sortir de la Rat Race ?',['Un salaire supérieur à 4 000 € par mois','Des revenus passifs supérieurs aux dépenses mensuelles','Ne plus avoir de crédit'],1,'C’est la seule condition du jeu, et de la vie réelle : tes revenus passifs couvrent toutes tes dépenses.'],
+    ['Léo a gagné 450 € de plus et ne respire pas mieux. Pourquoi ?',['Les impôts ont tout pris','Ses dépenses ont augmenté avec ses revenus','Son employeur a baissé ses primes'],1,'C’est le cœur de la course : chaque hausse de revenu est absorbée par un train de vie plus élevé.'],
+    ['Lequel de ces revenus est passif ?',['Un salaire de cadre','Une mission freelance payée au jour','Le loyer net d’un appartement loué'],2,'Le loyer arrive que tu travailles ou non ce mois-ci.']]},
+  {id:'ch2',t:'Ce qui remplit ta poche',n:'2',quiz:[
+    ['Selon Kiyosaki, qu’est-ce qu’un actif ?',['Tout ce qui a une valeur de revente','Ce qui met de l’argent dans ta poche chaque mois','Ce que la banque accepte en garantie'],1,'La définition se mesure en cashflow, pas en valeur.'],
+    ['Ta résidence principale, achetée à crédit, est pour ton cashflow…',['Un actif, car elle prend de la valeur','Un passif, car elle te coûte chaque mois','Ni l’un ni l’autre'],1,'Mensualité, taxe et charges sortent chaque mois. Elle vaut quelque chose, mais elle ne rapporte rien tant que tu y habites.'],
+    ['Un studio loué 520 € avec 640 € de crédit et charges est…',['Un actif, puisqu’il est loué','Un passif, puisqu’il coûte 120 € par mois','Un actif, puisqu’il prendra de la valeur'],1,'Le cashflow mensuel tranche. Une hausse de prix future est un pari, pas un revenu.']]},
+  {id:'ch3',t:'La feuille qui dit la vérité',n:'3',quiz:[
+    ['Que montre le compte de résultat ?',['Ce que tu possèdes et ce que tu dois','Ce qui entre et ce qui sort chaque mois','Ton score de crédit'],1,'Le compte de résultat suit les flux du mois. Le bilan, en bas, montre le stock.'],
+    ['Quel chiffre de la feuille faut-il surveiller en priorité ?',['Le salaire','Le total des actifs','Le cashflow mensuel'],2,'C’est lui qui dit si tu avances. Léo pensait avoir 450 € de plus ; son vrai cashflow était de 64 €.'],
+    ['Un vrai actif apparaît sur la feuille…',['Dans le bilan seulement','Dans le bilan et dans les revenus','Dans les dépenses'],1,'Il a une valeur (bilan) et il produit un revenu (compte de résultat).']]},
+  {id:'ch4',t:'Ne mange pas tes graines',n:'4',quiz:[
+    ['« Se payer en premier », c’est…',['Se verser un salaire avant ses salariés','Mettre de côté pour investir dès que l’argent arrive, avant les dépenses','Rembourser ses dettes en premier'],1,'Un virement automatique part vers le capital le jour de la paie. Ce qui reste se dépense.'],
+    ['Marco a hérité de 80 000 € et il lui en reste 6 000 € cinq ans plus tard. Son erreur ?',['Il a mal placé l’argent','Il a vécu du capital au lieu de vivre de ses fruits','Il a payé trop d’impôts'],1,'Placé à 4 %, ce capital lui aurait versé environ 266 € par mois, pour toujours.'],
+    ['Tant que tu es dans la course, que fais-tu des revenus de tes actifs ?',['Tu les dépenses pour te récompenser','Tu les réinvestis pour faire grossir le capital','Tu les laisses sur ton compte courant'],1,'Le réinvestissement crée l’effet boule de neige des intérêts composés.']]},
+  {id:'ch5',t:'Les arbres à fruits',n:'5',quiz:[
+    ['Dans quels quadrants l’argent continue-t-il d’arriver si tu t’arrêtes ?',['E et S','B et I','S et I'],1,'Propriétaire d’un système (B) et investisseur (I) : ce sont les quadrants de droite.'],
+    ['Pour sortir de la course, quel type d’investissement compte ?',['Celui qui produit un cashflow mensuel','Celui qui a le plus de chances de prendre de la valeur','Le plus à la mode'],0,'La plus-value est un bonus. La sortie se fait au cashflow.'],
+    ['Un coaching de groupe que tu animes deux heures par semaine est plutôt…',['Un revenu passif','Un revenu semi-passif','Un passif'],1,'Il demande encore un peu de ton temps, mais il accélère la construction du capital.']]},
+  {id:'ch6',t:'Choisir sa forme',n:'6',quiz:[
+    ['En micro-entreprise, sur quoi sont calculées les cotisations ?',['Sur le bénéfice après frais','Sur le chiffre d’affaires encaissé','Sur le salaire que tu te verses'],1,'Pas de déduction des frais réels : c’est la simplicité, et la limite, du régime.'],
+    ['Quel est le taux réduit de l’IS en 2026 ?',['15 % jusqu’à 42 500 € de bénéfice','25 % dès le premier euro','31,4 %'],0,'15 % jusqu’à 42 500 €, 25 % au-delà.'],
+    ['Pourquoi une société à l’IS intéresse-t-elle un investisseur ?',['Elle supprime l’impôt','Elle permet de laisser l’argent dans la structure, peu taxé, pour acheter des actifs','Elle évite toute comptabilité'],1,'Tu ne sors que ce dont tu as besoin. Le reste capitalise dans l’entreprise.']]},
+  {id:'ch7',t:'Les murs qui paient',n:'7',quiz:[
+    ['En location vide, le micro-foncier applique…',['Un abattement de 50 %','Un abattement de 30 %, jusqu’à 15 000 € de loyers','La déduction des charges réelles'],1,'Au-delà de 15 000 €, ou sur option, c’est le régime réel avec le formulaire 2044.'],
+    ['Quel avantage principal offre la location meublée au réel ?',['L’amortissement du bien, qui réduit souvent l’impôt à zéro','Un abattement de 71 %','Aucun impôt à la revente'],0,'Attention : depuis 2025, les amortissements sont réintégrés dans la plus-value à la revente.'],
+    ['Avant d’acheter un bien locatif, Solène calcule d’abord…',['La plus-value possible dans 10 ans','Le cashflow mensuel : loyer moins crédit, charges et taxes','La surface habitable'],1,'On n’achète pas un appartement, on achète un cashflow.']]},
+  {id:'ch8',t:'Le grain et la taxe',n:'8',quiz:[
+    ['Quel est le taux de la flat tax en 2026 ?',['30 %','31,4 %','17,2 %'],1,'12,8 % d’impôt + 18,6 % de prélèvements sociaux.'],
+    ['Qu’apporte un PEA après 5 ans ?',['Aucun impôt du tout','Pas d’impôt sur le revenu sur les gains, seulement les prélèvements sociaux','Une réduction d’impôt à l’entrée'],1,'C’est la date d’ouverture qui fait courir le délai : ouvre-le tôt.'],
+    ['Que mettre en premier sur un livret ?',['Tout ton capital','Une épargne de précaution de 3 à 6 mois de dépenses','Rien, les livrets ne rapportent pas assez'],1,'Ce matelas évite de vendre tes actifs au mauvais moment.']]},
+  {id:'ch9',t:'Le tableau de bord',n:'9',quiz:[
+    ['Où sont stockées tes données dans la version locale de l’application ?',['Sur un serveur en ligne','Dans ton navigateur, sur ton appareil','Chez ta banque'],1,'D’où l’importance de la sauvegarde mensuelle.'],
+    ['Que se passe-t-il si tu vides le cache de ton navigateur sans sauvegarde ?',['Rien','Tes données locales sont effacées','Elles sont envoyées par mail'],1,'Exporte une sauvegarde JSON chaque mois et range-la en lieu sûr.'],
+    ['La routine du PAYDAY consiste à…',['Vérifier son solde tous les jours','Faire 15 minutes de bilan mensuel et décider d’une action','Changer de banque chaque mois'],1,'Mesurer, comprendre, décider, sauvegarder.']]},
+  {id:'ch10',t:'La piste extérieure',n:'10'},
+  {id:'carnet',t:'Mon carnet',n:'C'},
+  {id:'annexe',t:'Glossaire et chiffres 2026',n:'A'}
+];
+/* ==== Carnet : questions posées au fil des chapitres. Clés stables, reprises par l’application pour préremplir la feuille. ==== */
+const FPB=(window.CF_PARAMS&&window.CF_PARAMS.micro)?window.CF_PARAMS:null;
+const fpGet=k=>k.split('.').reduce((o,x)=>o==null?o:o[x],FPB);
+const fpFmt=(v,f)=>f==='pct'?String(v).replace('.',',')+' %':f==='eur'?new Intl.NumberFormat('fr-FR').format(v).replace(/ /g,' ')+' €':String(v);
+/* Met à jour les chiffres fiscaux balisés data-p avec les paramètres de l’année (version distribuable). */
+function fpFill(root){if(!FPB)return;root.querySelectorAll('[data-p]').forEach(e=>{const v=fpGet(e.dataset.p);if(v!=null)e.textContent=fpFmt(v,e.dataset.f)})}
+if(FPB){const y=FPB.year,c=FPB.capital,is=FPB.is,f=FPB.foncier,P=x=>fpFmt(x,'pct'),E=x=>fpFmt(x,'eur');
+  const q=(id,i,v)=>{const ch=CH.find(x=>x.id===id);if(ch&&ch.quiz&&ch.quiz[i])ch.quiz[i]=v};
+  q('ch6',1,[`Quel est le taux réduit de l’IS en ${y} ?`,[`${P(is.reduit)} jusqu’à ${E(is.seuil)} de bénéfice`,`${P(is.normal)} dès le premier euro`,P(c.pfu)],0,`${P(is.reduit)} jusqu’à ${E(is.seuil)}, ${P(is.normal)} au-delà.`]);
+  q('ch7',0,['En location vide, le micro-foncier applique…',['Un abattement de 50 %',`Un abattement de ${P(f.microAbatt)}, jusqu’à ${E(f.microPlafond)} de loyers`,'La déduction des charges réelles'],1,`Au-delà de ${E(f.microPlafond)}, ou sur option, c’est le régime réel avec le formulaire 2044.`]);
+  q('ch8',0,[`Quel est le taux de la flat tax en ${y} ?`,['30 %',P(c.pfu),P(f.ps)],1,`${P(c.ir)} d’impôt + ${P(c.ps)} de prélèvements sociaux.`]);
+  const an=CH.find(x=>x.id==='annexe');if(an)an.t='Glossaire et chiffres '+y;
+  document.querySelectorAll('template').forEach(t=>fpFill(t.content));fpFill(document)}
+const CARNET_VERSION=1;
+const SUM=(d,ks)=>ks.reduce((t,k)=>t+(Number(d[k])||0),0);
+const DEP_KEYS=['logement_cout','vehicule_credit','autres_credits','dep_courses','dep_transport','dep_abonnements','dep_assurances','dep_loisirs','dep_impots','dep_autres'];
+const REV_KEYS=['rev_salaire','rev_activite','rev_aides','rev_passif'];
+const MICRO={vente:['Vente de marchandises (BIC)',13.4,1],bic:['Prestations de services (BIC)',23.2,1.7],bnc:['Profession libérale (BNC)',28,2.2],cipav:['Libéral réglementé (CIPAV)',25.6,2.2]};
+if(FPB){const M=FPB.micro,t=x=>Math.round((x.urssaf+x.cfp+x.vl)*10)/10;MICRO.vente[1]=t(M.vente);MICRO.vente[2]=M.vente.vl;MICRO.bic[1]=t(M.bics);MICRO.bic[2]=M.bics.vl;MICRO.bnc[1]=t(M.bnc);MICRO.bnc[2]=M.bnc.vl;MICRO.cipav[1]=t(M.cipav);MICRO.cipav[2]=M.cipav.vl}
+const CARNET={
+ ch1:{t:'Ton point de départ',f:[
+  {k:'dep_total',l:'Combien as-tu dépensé le mois dernier, en tout ?',h:'Relevés bancaires, carte, espèces. Arrondis : l’honnêteté compte plus que les centimes.',ty:'eur',u:'€'},
+  {k:'rev_passif',l:'Combien as-tu touché sans travailler ce mois-là ?',h:'Loyers nets, dividendes, intérêts, ventes qui se font sans toi. Zéro est une réponse normale.',ty:'eur',u:'€'},
+  {ty:'calc',l:'Ta couverture',fn:d=>Number(d.dep_total)?Math.round((Number(d.rev_passif)||0)/Number(d.dep_total)*100)+' %':'—'}]},
+ ch2:{t:'Ce que tu possèdes, ce que tu dois',f:[
+  {k:'logement',l:'Ton logement',ty:'choice',o:[['locataire','Locataire'],['proprio_credit','Propriétaire, avec crédit'],['proprio','Propriétaire, sans crédit'],['heberge','Hébergé']]},
+  {k:'logement_cout',l:'Loyer ou mensualité de crédit du logement',ty:'eur',u:'€ / mois',show:d=>d.logement&&d.logement!=='heberge'&&d.logement!=='proprio'},
+  {k:'logement_valeur',l:'Valeur estimée de ta résidence principale',ty:'eur',u:'€',show:d=>d.logement==='proprio_credit'||d.logement==='proprio'},
+  {k:'logement_crd',l:'Capital restant dû sur ce crédit',ty:'eur',u:'€',show:d=>d.logement==='proprio_credit'},
+  {k:'vehicule_credit',l:'Crédit ou location de véhicule (LOA, LLD)',ty:'eur',u:'€ / mois'},
+  {k:'autres_credits',l:'Autres crédits : conso, étudiant, travaux',ty:'eur',u:'€ / mois'},
+  {k:'dettes_crd',l:'Ce qu’il reste à rembourser sur ces autres crédits',ty:'eur',u:'€'},
+  {k:'nb_actifs',l:'Combien de vrais actifs as-tu ?',h:'Ceux qui te versent de l’argent chaque mois.',ty:'int'}]},
+ ch3:{t:'Ta feuille financière',f:[
+  {ty:'title',l:'Ce qui entre chaque mois'},
+  {k:'rev_salaire',l:'Salaire net',ty:'eur',u:'€ / mois'},
+  {k:'rev_activite',l:'Revenus d’une activité à ton compte (moyenne)',ty:'eur',u:'€ / mois'},
+  {k:'rev_aides',l:'Aides, pensions, autres revenus',ty:'eur',u:'€ / mois'},
+  {ty:'title',l:'Ce qui sort chaque mois (en plus du logement et des crédits du chapitre 2)'},
+  {k:'dep_courses',l:'Courses et alimentation',ty:'eur',u:'€'},{k:'dep_transport',l:'Transport : essence, transports en commun',ty:'eur',u:'€'},
+  {k:'dep_abonnements',l:'Abonnements : téléphone, internet, streaming, sport',ty:'eur',u:'€'},{k:'dep_assurances',l:'Assurances et santé',ty:'eur',u:'€'},
+  {k:'dep_loisirs',l:'Sorties, loisirs, vacances (moyenne)',ty:'eur',u:'€'},{k:'dep_impots',l:'Impôts prélevés chaque mois',ty:'eur',u:'€'},{k:'dep_autres',l:'Tout le reste',ty:'eur',u:'€'},
+  {ty:'calc',l:'Ton cashflow mensuel',fn:d=>{const r=SUM(d,REV_KEYS),e=SUM(d,DEP_KEYS);return (r||e)?((r-e>=0?'+':'')+fmt(r-e)):'—'}},
+  {k:'epargne_dispo',l:'Ton épargne disponible aujourd’hui',h:'Comptes courants et livrets, ce que tu peux utiliser sans rien vendre.',ty:'eur',u:'€'}]},
+ ch4:{t:'Te payer en premier',f:[
+  {k:'pay_first',l:'Combien vas-tu virer automatiquement chaque mois vers ton capital ?',ty:'eur',u:'€ / mois'},
+  {k:'pay_first_jour',l:'Quel jour du mois ?',h:'Le lendemain de ta paie.',ty:'int',min:1,max:31},
+  {k:'pay_first_compte',l:'Vers quel compte ?',h:'Un compte qui ne sert qu’à investir : livret, PEA, compte dédié.',ty:'text'}]},
+ ch5:{t:'Ton premier arbre',f:[
+  {k:'arbre',l:'Quel est ton premier arbre à fruits ?',h:'Exemple : un ETF monde alimenté chaque mois, un pack de modèles à vendre, une chambre louée.',ty:'text'},
+  {k:'arbre_type',l:'Son type',ty:'choice',o:[['placement','Placement'],['produit','Produit à vendre'],['location','Location'],['service','Service récurrent'],['autre','Autre']]},
+  {k:'arbre_cible',l:'Combien voudrais-tu qu’il te rapporte par mois d’ici un an ?',ty:'eur',u:'€ / mois'}]},
+ ch6:{t:'Ton statut',f:[
+  {k:'statut',l:'Ton statut principal',ty:'choice',o:[['salarie','Salarié'],['micro','Micro-entreprise'],['ei_reel','Entreprise individuelle au réel'],['eurl','EURL'],['sasu','SASU / SAS'],['sans','Sans activité']]},
+  {k:'nb_entreprises',l:'Combien d’entreprises as-tu, au total ?',h:'Micro-entreprise et sociétés comprises. 0 si tu n’en as pas.',ty:'int'},
+  {k:'micro_type',l:'Ta micro-entreprise fait…',ty:'choice',o:Object.entries(MICRO).map(([k,v])=>[k,v[0]]),show:d=>d.statut==='micro'},
+  {k:'micro_vl',l:'As-tu choisi le versement libératoire de l’impôt ?',ty:'choice',o:[['oui','Oui'],['non','Non'],['nsp','Je ne sais pas']],show:d=>d.statut==='micro'},
+  {k:'ca_mensuel',l:'Ton chiffre d’affaires moyen par mois',ty:'eur',u:'€ / mois',show:d=>d.statut&&d.statut!=='salarie'&&d.statut!=='sans'},
+  {ty:'calc',l:'Pour 100 € facturés, il te reste environ',show:d=>d.statut==='micro'&&d.micro_type,fn:d=>{const t=MICRO[d.micro_type];if(!t)return '—';const r=d.micro_vl==='oui'?t[1]:t[1]-t[2];return (100-r).toFixed(1).replace('.',',')+' € avant tes frais'}}]},
+ ch7:{t:'Ton immobilier',f:[
+  {k:'immo',l:'As-tu de l’immobilier en dehors de ta résidence principale ?',h:'Appartement loué, parts de SCI, bien en indivision, garage, local.',ty:'choice',o:[['oui','Oui'],['non','Non']]},
+  {k:'biens',ty:'biens',show:d=>d.immo==='oui'}]},
+ ch8:{t:'Tes placements',f:[
+  {ty:'title',l:'Combien as-tu sur chaque enveloppe ?'},
+  {k:'pl_livrets',l:'Livrets (A, LDDS, LEP)',ty:'eur',u:'€'},{k:'pl_pea',l:'PEA',ty:'eur',u:'€'},{k:'pl_av',l:'Assurance-vie',ty:'eur',u:'€'},
+  {k:'pl_cto',l:'Compte-titres ordinaire',ty:'eur',u:'€'},{k:'pl_per',l:'PER (retraite)',ty:'eur',u:'€'},{k:'pl_crypto',l:'Cryptomonnaies',ty:'eur',u:'€'},
+  {ty:'calc',l:'Total de tes placements',fn:d=>{const t=SUM(d,['pl_livrets','pl_pea','pl_av','pl_cto','pl_per','pl_crypto']);return t?fmt(t):'—'}},
+  {k:'pl_revenus',l:'Combien te rapportent-ils par mois, en moyenne ?',h:'Intérêts et dividendes, sans compter les plus-values.',ty:'eur',u:'€ / mois'}]},
+ ch9:{t:'Ton tableau de bord',f:[
+  {k:'payday_jour',l:'Quel jour du mois sera ton PAYDAY ?',h:'Un quart d’heure pour faire le point.',ty:'int',min:1,max:31},
+  {ty:'title',l:'Une activité que tu pourrais vendre'},
+  {k:'act_nom',l:'Son nom',h:'Une prestation, un produit, une formation.',ty:'text'},
+  {k:'act_prix',l:'Son prix de vente',ty:'eur',u:'€'},
+  {k:'act_obj',l:'Combien de ventes vises-tu par mois ?',ty:'int'},
+  {ty:'calc',l:'Chiffre d’affaires visé',fn:d=>{const v=(Number(d.act_prix)||0)*(Number(d.act_obj)||0);return v?fmt(v)+' / mois':'—'}}]},
+ ch10:{t:'Ton rêve et ta date',f:[
+  {k:'reve',l:'Qu’est-ce que tu feras quand tu seras sorti de la course ?',ty:'text'},
+  {k:'reve_cout',l:'Combien coûte ce rêve ?',ty:'eur',u:'€'},
+  {k:'sortie_date',l:'Quand veux-tu sortir de la Rat Race ?',ty:'month'},
+  {k:'action_1',l:'Ta première action, cette semaine',ty:'area'}]}
+};
+const BIEN_F=[['nom','Nom ou ville','text'],['usage','Usage','choice',[['nu','Loué vide'],['meuble','Loué meublé'],['courte','Location courte durée'],['vide','Pas loué']]],
+  ['regime','Régime fiscal','choice',[['micro_foncier','Micro-foncier'],['reel_2044','Réel (2044)'],['micro_bic','Micro-BIC'],['lmnp_reel','LMNP au réel'],['sci_is','SCI à l’IS'],['nsp','Je ne sais pas']]],
+  ['detention','Détention','choice',[['pleine','À moi seul'],['indivision','Indivision ou SCI familiale']]],['quote','Ta part','int','%'],
+  ['valeur','Valeur estimée','eur','€'],['loyer','Loyer encaissé','eur','€ / mois'],['credit','Mensualité de crédit','eur','€ / mois'],['charges','Charges, taxe foncière, assurance','eur','€ / mois'],['crd','Capital restant dû','eur','€']];
+let carnet={};try{carnet=JSON.parse(localStorage.getItem('rr-carnet')||'{}')||{}}catch(e){carnet={}}
+const saveCarnet=()=>{carnet._v=CARNET_VERSION;carnet._maj=new Date().toISOString();try{localStorage.setItem('rr-carnet',JSON.stringify(carnet))}catch(e){}};
+const escH=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const parseEur=v=>{const x=String(v).replace(/\s|€/g,'').replace(',','.');if(x==='')return null;const n=Number(x);return Number.isFinite(n)?n:null};
+const shownEur=v=>v==null||v===''?'':String(v).replace('.',',');
+function fieldHTML(f,d,pre){const id=pre+(f.k||'');if(f.show&&!f.show(d))return '';
+  if(f.ty==='title')return `<div class="cl" style="color:var(--teal);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-top:4px">${f.l}</div>`;
+  if(f.ty==='calc')return `<div class="cres"><span>${f.l}</span><b>${f.fn(d)}</b></div>`;
+  if(f.ty==='biens')return biensHTML(d);
+  const h=f.h?`<small>${f.h}</small>`:'';const v=d[f.k];
+  if(f.ty==='choice')return `<div class="cq"><div class="cl" id="l-${id}">${f.l}${h}</div><div class="chips" role="group" aria-labelledby="l-${id}">${f.o.map(([k,l])=>`<button type="button" data-ck="${f.k}" data-cv="${k}" aria-pressed="${v===k}">${l}</button>`).join('')}</div></div>`;
+  if(f.ty==='area')return `<div class="cq"><label for="${id}">${f.l}${h}</label><textarea id="${id}" data-ck="${f.k}" data-ty="text">${escH(v||'')}</textarea></div>`;
+  const ty=f.ty==='eur'?'text':f.ty==='int'?'number':f.ty==='month'?'month':'text';const im=f.ty==='eur'?'inputmode="decimal"':f.ty==='int'?'inputmode="numeric"':'';
+  return `<div class="cq"><label for="${id}">${f.l}${h}</label><div class="in" ${f.ty==='text'?'style="max-width:none"':''}><input id="${id}" type="${ty}" ${im} ${f.min!=null?`min="${f.min}" max="${f.max}"`:''} data-ck="${f.k}" data-ty="${f.ty}" value="${escH(f.ty==='eur'?shownEur(v):v??'')}" autocomplete="off" ${f.ty==='eur'?'placeholder="0"':''}>${f.u?`<span class="u">${f.u}</span>`:''}</div></div>`}
+function biensHTML(d){const L=d.biens&&d.biens.length?d.biens:[{}];
+  return L.map((b,i)=>`<div class="cbien"><h5>Bien ${i+1}${L.length>1?`<button type="button" class="lnk" data-bdel="${i}">Retirer</button>`:''}</h5>${BIEN_F.map(([k,l,ty,x])=>{const id='b'+i+'-'+k,v=b[k];
+    if(ty==='choice')return `<div class="cq"><div class="cl">${l}</div><div class="chips">${x.map(([ck,cl])=>`<button type="button" data-bi="${i}" data-bk="${k}" data-cv="${ck}" aria-pressed="${v===ck}">${cl}</button>`).join('')}</div></div>`;
+    if(k==='quote'&&b.detention!=='indivision')return '';
+    return `<div class="cq"><label for="${id}">${l}</label><div class="in" ${ty==='text'?'style="max-width:none"':''}><input id="${id}" type="${ty==='int'?'number':'text'}" ${ty==='eur'?'inputmode="decimal" placeholder="0"':ty==='int'?'inputmode="numeric" min="0" max="100"':''} data-bi="${i}" data-bk="${k}" data-ty="${ty}" value="${escH(ty==='eur'?shownEur(v):v??'')}" autocomplete="off">${x?`<span class="u">${x}</span>`:''}</div></div>`}).join('')}
+    ${b.loyer!=null||b.credit!=null||b.charges!=null?`<div class="cres"><span>Cashflow de ce bien${b.detention==='indivision'&&b.quote?' (bien entier)':''}</span><b>${(()=>{const c=(Number(b.loyer)||0)-(Number(b.credit)||0)-(Number(b.charges)||0);return (c>=0?'+':'')+fmt(c)+' / mois'})()}</b></div>`:''}</div>`).join('')+
+    `<button type="button" class="btn ghost" data-badd style="justify-self:start">+ Ajouter un bien</button>`}
+function carnetBody(id){const C=CARNET[id];return C.f.map(f=>fieldHTML(f,carnet,'c-')).join('')}
+function carnetHTML(id){const C=CARNET[id];if(!C)return '';
+  return `<section class="carnet" aria-label="Ton carnet"><div class="carnet-h"><b>Ton carnet · ${C.t}</b><span>Note tes chiffres ici, ou sur ta feuille si tu lis sur papier.</span></div><div class="carnet-b" id="carnet-b" data-ch="${id}">${carnetBody(id)}</div></section>`}
+function refreshCarnet(keepFocus){const b=document.getElementById('carnet-b');if(!b)return;const a=document.activeElement;const fid=a&&a.id,sel=a&&a.selectionStart;
+  b.innerHTML=carnetBody(b.dataset.ch);if(keepFocus&&fid){const el=document.getElementById(fid);if(el){el.focus();try{el.setSelectionRange(sel,sel)}catch(e){}}}}
+function wireCarnet(){const b=document.getElementById('carnet-b');if(!b)return;
+  b.addEventListener('click',e=>{const c=e.target.closest('[data-cv]');
+    if(c&&c.dataset.ck){carnet[c.dataset.ck]=carnet[c.dataset.ck]===c.dataset.cv?null:c.dataset.cv;saveCarnet();refreshCarnet();return}
+    if(c&&c.dataset.bk){const L=carnet.biens=carnet.biens&&carnet.biens.length?carnet.biens:[{}];const o=L[+c.dataset.bi]=L[+c.dataset.bi]||{};o[c.dataset.bk]=o[c.dataset.bk]===c.dataset.cv?null:c.dataset.cv;saveCarnet();refreshCarnet();return}
+    if(e.target.closest('[data-badd]')){carnet.biens=(carnet.biens&&carnet.biens.length?carnet.biens:[{}]).concat([{}]);saveCarnet();refreshCarnet();return}
+    const del=e.target.closest('[data-bdel]');if(del){carnet.biens.splice(+del.dataset.bdel,1);saveCarnet();refreshCarnet()}});
+  let tm=null;
+  b.addEventListener('input',e=>{const t=e.target;const ty=t.dataset.ty;const val=ty==='eur'?parseEur(t.value):ty==='int'?(t.value===''?null:Math.max(0,Math.round(Number(t.value)))):t.value;
+    if(t.dataset.ck)carnet[t.dataset.ck]=val;else if(t.dataset.bk){const L=carnet.biens=carnet.biens&&carnet.biens.length?carnet.biens:[{}];(L[+t.dataset.bi]=L[+t.dataset.bi]||{})[t.dataset.bk]=val}
+    saveCarnet();syncCalc();clearTimeout(tm);tm=setTimeout(()=>refreshCarnet(true),700)});}
+/* Le calculateur du chapitre 1 reprend les réponses du carnet */
+function syncCalc(){const e=document.getElementById('rr-exp'),p=document.getElementById('rr-pas');if(!e||!p)return;
+  if(carnet.dep_total!=null){e.value=Math.round(carnet.dep_total)}if(carnet.rev_passif!=null){p.value=Math.round(carnet.rev_passif)}e.dispatchEvent(new Event('input',{bubbles:true}))}
+function recapHTML(){const fmtV=(f,v)=>{if(v==null||v==='')return null;if(f.ty==='eur')return fmt(v)+(f.u&&f.u.includes('mois')?' / mois':'');if(f.ty==='choice'){const o=f.o.find(x=>x[0]===v);return o?o[1]:v}if(f.ty==='month'){const [y,m]=String(v).split('-');return m?new Date(+y,+m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):v}return String(v)};
+  let total=0,filled=0;
+  const secs=Object.entries(CARNET).map(([ch,C])=>{const c=CH.find(x=>x.id===ch);const rows=[];
+    for(const f of C.f){if(f.ty==='title')continue;if(f.ty==='calc'){if(!f.show||f.show(carnet))rows.push(`<div class="ln"><span>${f.l}</span><b>${f.fn(carnet)}</b></div>`);continue}
+      if(f.ty==='biens'){if(carnet.immo==='oui')(carnet.biens||[]).forEach((b,i)=>{const lab=[b.nom||'Bien '+(i+1),b.usage&&BIEN_F[1][3].find(x=>x[0]===b.usage)?.[1],b.regime&&BIEN_F[2][3].find(x=>x[0]===b.regime)?.[1]].filter(Boolean).join(' · ');
+        const cf=(Number(b.loyer)||0)-(Number(b.credit)||0)-(Number(b.charges)||0);rows.push(`<div class="ln"><span>${escH(lab)}</span><b>${b.valeur?fmt(b.valeur)+' · ':''}${(cf>=0?'+':'')+fmt(cf)} / mois</b></div>`)});continue}
+      if(f.show&&!f.show(carnet))continue;total++;const v=fmtV(f,carnet[f.k]);if(v!=null)filled++;
+      rows.push(`<div class="ln ${v==null?'empty':''}"><span>${f.l}</span><b>${v==null?'à noter':escH(v)}</b></div>`)}
+    return `<section><h4><span>${c.n} · ${C.t}</span><a href="#${ch}">Modifier</a></h4>${rows.join('')}</section>`});
+  return `<div class="calc" style="margin-top:0"><h4>Ton carnet est rempli à ${total?Math.round(filled/total*100):0} %</h4><div class="gauge"><i style="width:${total?filled/total*100:0}%"></i></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button type="button" class="btn" id="rc-copy">Copier mon carnet</button><button type="button" class="btn ghost" id="rc-clear">Effacer mon carnet</button><span class="csaved" id="rc-msg" role="status"></span></div></div>
+    <div class="recap">${secs.join('')}</div>`}
+function recapText(){const out=['Mon carnet · Ma gestion du cashflow',''];document.querySelectorAll('.recap section').forEach(s=>{out.push(s.querySelector('h4 span').textContent.toUpperCase());s.querySelectorAll('.ln').forEach(l=>out.push('- '+l.children[0].textContent+' : '+l.children[1].textContent));out.push('')});return out.join('\n')}
+function wireRecap(){const r=document.getElementById('recap');if(!r)return;r.innerHTML=recapHTML();let armed=false;
+  document.getElementById('rc-copy').addEventListener('click',async()=>{const t=recapText();const m=document.getElementById('rc-msg');try{await navigator.clipboard.writeText(t);m.textContent='Carnet copié'}catch(e){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='width:100%;min-height:200px;margin-top:10px';r.prepend(ta);ta.select();m.textContent='Texte sélectionné : copie-le'}});
+  document.getElementById('rc-clear').addEventListener('click',e=>{if(!armed){armed=true;e.currentTarget.textContent='Confirmer : tout effacer';return}carnet={};saveCarnet();wireRecap()})}
+
+/* Progression : en mémoire, et dans le navigateur quand c’est possible */
+let done={};try{done=JSON.parse(localStorage.getItem('rr-ebook-done')||'{}')||{}}catch(e){done={}}
+const save=()=>{try{localStorage.setItem('rr-ebook-done',JSON.stringify(done))}catch(e){}};
+const idx=id=>CH.findIndex(c=>c.id===id);
+function unlocked(i){if(CH[i]&&CH[i].id==='carnet')return true;for(let k=0;k<i;k++){if(CH[k].quiz&&!done[CH[k].id])return false}return true}
+function firstLockedBy(i){for(let k=0;k<i;k++){if(CH[k].quiz&&!done[CH[k].id])return k}return -1}
+const fmt=n=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(Math.round(n))+' €';
+
+function renderToc(cur){
+  const ol=document.getElementById('toc-list');
+  ol.innerHTML=CH.map((c,i)=>{const lk=!unlocked(i),d=c.quiz&&done[c.id];
+    return `<li><a href="#${c.id}" class="${lk?'locked':''} ${d?'done':''}" ${c.id===cur?'aria-current="page"':''}><span class="n">${c.n==='0'?'—':c.n}</span><span>${c.t}</span><span class="st">${lk?'verrouillé':d?'✓':''}</span></a></li>`}).join('');
+  const nq=CH.filter(c=>c.quiz).length,nd=CH.filter(c=>c.quiz&&done[c.id]).length;
+  document.getElementById('prog').style.width=(nd/nq*100)+'%';
+  const pb=document.getElementById('prog-bar');pb.setAttribute('aria-valuenow',String(Math.round(nd/nq*100)));
+}
+function quizHTML(c){
+  return `<section class="quiz" aria-label="Quiz du chapitre"><div class="quiz-h"><b>Quiz · ${c.quiz.length} questions</b><span>${done[c.id]?'réussi':'3 bonnes réponses pour continuer'}</span></div>
+  ${c.quiz.map((q,qi)=>`<div class="q" data-q="${qi}"><p class="qt">${qi+1}. ${q[0]}</p><div class="opts">${q[1].map((o,oi)=>`<button type="button" class="opt" data-q="${qi}" data-o="${oi}"><span class="k">${'abc'[oi]}</span><span>${o}</span></button>`).join('')}</div><div class="fb" id="fb-${qi}" aria-live="polite"></div></div>`).join('')}
+  <div class="quiz-f"><span id="qscore" class="mono">0 / ${c.quiz.length}</span><span class="sp"></span><button type="button" class="btn ghost" id="qreset">Recommencer</button></div></section>`;
+}
+function navHTML(i){const prev=CH[i-1],next=CH[i+1];
+  return `<div class="nav">${prev?`<a class="btn ghost" href="#${prev.id}">← ${prev.t}</a>`:'<span></span>'}${next?`<a class="btn" id="next-btn" href="#${next.id}" ${unlocked(i+1)?'':'aria-disabled="true"'}>${unlocked(i+1)?'':'🔒 '}${next.t} →</a>`:''}</div>`}
+function show(id){
+  let i=idx(id);if(i<0)i=0;const c=CH[i];const main=document.getElementById('main');
+  if(!unlocked(i)){const k=firstLockedBy(i);main.innerHTML=`<div class="chap"><div class="chap-num">Chapitre ${c.n}</div><h2>${c.t}</h2><div class="lockmsg"><p style="margin:0 0 12px">Ce chapitre s’ouvre quand tu as réussi le quiz du chapitre ${CH[k].n}, « ${CH[k].t} ». Les principes s’empilent : chaque étape s’appuie sur la précédente.</p><a class="btn" href="#${CH[k].id}">Aller au chapitre ${CH[k].n}</a></div></div>`;renderToc(c.id);return}
+  const tpl=document.getElementById('c-'+c.id);
+  main.innerHTML=`<article class="chap">${tpl.innerHTML}${c.quiz?quizHTML(c):''}${navHTML(i)}<p class="foot">Ma gestion du cashflow · ${c.n==='A'?'Annexe':c.n==='C'?'Ton carnet':c.n==='0'?'Prologue':'Chapitre '+c.n+' sur 10'}. Éducation financière, pas un conseil personnalisé.</p></article>`;
+  if(CARNET[c.id]){const art=main.querySelector('article');const tmp=document.createElement('div');tmp.innerHTML=carnetHTML(c.id);const todos=art.querySelectorAll(':scope > .todo');const q=art.querySelector(':scope > .quiz');
+    if(todos.length)todos[todos.length-1].after(tmp.firstElementChild);else if(q)q.before(tmp.firstElementChild);else art.querySelector('.nav').before(tmp.firstElementChild)}
+  renderToc(c.id);wire(c,i);wireCarnet();wireRecap();syncCalc();
+  if(window.__first)window.scrollTo({top:document.getElementById('main').offsetTop-10});window.__first=true;
+  const toc=document.getElementById('toc');if(window.innerWidth<980){toc.classList.add('closed');document.getElementById('toc-toggle').setAttribute('aria-expanded','false');document.getElementById('toc-toggle').textContent='Afficher'}
+}
+function wire(c,i){
+  if(c.quiz){const ans={};const upd=()=>{const ok=Object.entries(ans).filter(([q,o])=>c.quiz[q][2]===o).length;document.getElementById('qscore').textContent=ok+' / '+c.quiz.length;
+      if(ok===c.quiz.length&&!done[c.id]){done[c.id]=true;save();renderToc(c.id);const nb=document.getElementById('next-btn');if(nb){nb.removeAttribute('aria-disabled');nb.textContent=CH[i+1].t+' →'}document.querySelector('.quiz-h span').textContent='réussi · chapitre suivant ouvert'}};
+    document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{const q=+b.dataset.q,o=+b.dataset.o;const Q=c.quiz[q];
+      document.querySelectorAll(`.opt[data-q="${q}"]`).forEach(x=>x.classList.remove('ok','ko'));b.classList.add(o===Q[2]?'ok':'ko');ans[q]=o;
+      document.getElementById('fb-'+q).innerHTML=o===Q[2]?`<b>Exact.</b> ${Q[3]}`:'<b>Pas tout à fait.</b> Relis le passage du chapitre et choisis une autre réponse.';upd()}));
+    document.getElementById('qreset').addEventListener('click',()=>{for(const k in ans)delete ans[k];document.querySelectorAll('.opt').forEach(x=>x.classList.remove('ok','ko'));document.querySelectorAll('.fb').forEach(x=>x.textContent='');upd()});}
+  const nb=document.getElementById('next-btn');if(nb)nb.addEventListener('click',e=>{if(nb.getAttribute('aria-disabled')==='true'){e.preventDefault();document.querySelector('.quiz')?.scrollIntoView({behavior:'smooth',block:'start'})}});
+  const rr=document.getElementById('calc-rr');if(rr){const f=()=>{const e=+document.getElementById('rr-exp').value||0,p=+document.getElementById('rr-pas').value||0;const cov=e?p/e:0;
+      document.getElementById('rr-g').style.width=Math.min(100,cov*100)+'%';document.getElementById('rr-cov').textContent=Math.round(cov*100)+' %';const m=Math.max(0,e-p);
+      document.getElementById('rr-miss').textContent=m?fmt(m):'Sorti !';document.getElementById('rr-cap').textContent=fmt(m*12/0.04)};rr.addEventListener('input',f);f()}
+  const ci=document.getElementById('calc-ci');if(ci){const f=()=>{const m=Math.max(0,+document.getElementById('ci-m').value||0),y=Math.min(50,Math.max(1,+document.getElementById('ci-y').value||1)),r=(+document.getElementById('ci-r').value||0)/100/12;
+      const cap=[0],inv=[0];let c=0;for(let k=1;k<=y*12;k++){c=c*(1+r)+m;if(k%12===0){cap.push(c);inv.push(m*k)}}
+      document.getElementById('ci-in').textContent=fmt(m*y*12);document.getElementById('ci-out').textContent=fmt(c);document.getElementById('ci-fr').textContent=fmt(c*0.04/12);
+      const W=640,H=210,pl=64,pr=12,pt=12,pb=26;const mx=Math.max(1,...cap);const step=Math.pow(10,Math.floor(Math.log10(mx)));const top=Math.ceil(mx/step)*step;
+      const X=k=>pl+k*(W-pl-pr)/y,Y=v=>pt+(H-pt-pb)*(1-v/top);let g='';
+      for(let t=0;t<=4;t++){const v=top*t/4;g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule)"/><text x="${pl-8}" y="${Y(v)+4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${v>=1e6?(v/1e6).toLocaleString('fr-FR',{maximumFractionDigits:1})+' M':v>=1e3?Math.round(v/1e3)+' k':Math.round(v)}</text>`}
+      const ty=Math.max(1,Math.ceil(y/6));for(let k=0;k<=y;k+=ty)g+=`<text x="${X(k)}" y="${H-6}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${k} an${k>1?'s':''}</text>`;
+      const area=`M${X(0)} ${Y(0)} `+cap.map((v,k)=>`L${X(k)} ${Y(v)}`).join(' ')+` L${X(y)} ${Y(0)} Z`;
+      g+=`<path d="${area}" fill="var(--gold-soft)"/><path d="${cap.map((v,k)=>(k?'L':'M')+X(k)+' '+Y(v)).join(' ')}" fill="none" stroke="var(--gold)" stroke-width="3"/><path d="${inv.map((v,k)=>(k?'L':'M')+X(k)+' '+Y(v)).join(' ')}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-dasharray="6 5"/>`;
+      g+=`<circle cx="${X(y)}" cy="${Y(c)}" r="5" fill="var(--gold)"/><text x="${pl+8}" y="${pt+14}" font-size="12.5" fill="var(--gold)" font-family="IBM Plex Sans Condensed, sans-serif" font-weight="700">Capital</text><text x="${pl+70}" y="${pt+14}" font-size="12.5" fill="var(--teal)" font-family="IBM Plex Sans Condensed, sans-serif" font-weight="700">Versements cumulés</text>`;
+      document.getElementById('ci-svg').innerHTML=g};ci.addEventListener('input',f);f()}
+}
+document.getElementById('toc-toggle').addEventListener('click',e=>{const t=document.getElementById('toc');const c=t.classList.toggle('closed');e.currentTarget.setAttribute('aria-expanded',String(!c));e.currentTarget.textContent=c?'Afficher':'Masquer'});
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1)||'prologue');
+</script>
+</body></html>

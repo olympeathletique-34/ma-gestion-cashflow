@@ -1,0 +1,166 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ma gestion du cashflow</title><meta name="theme-color" content="#14251f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cashflow"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="stylesheet" href="fonts.css"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="params.js"></script><script src="shell.js"></script></head><body>
+<style>
+/* Accueil du pack : la couverture du livre, puis deux portes. Le livre (registre crème, chiffres mono) et l'appli (plateau turquoise). */
+:root{
+  --paper:#f3f5f1; --sheet:#fbfcfa; --ink:#14251f; --muted:#5d6e66; --rule:#d5ded8;
+  --teal:#0b7f8f; --gold:#c48a12; --gold-soft:#f6ead0; --red:#c2412d;
+  --hero:#0b8fb0; --hero-2:#3fd3e3; --on-hero:#ffffff;
+  --f-display:"Gloock",Georgia,serif;
+  --f-body:"Source Serif 4",Charter,Georgia,serif;
+  --f-label:"IBM Plex Sans Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832;
+  --teal:#4fc2cf; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63;
+  --hero:#0a5f78; --hero-2:#14a3b8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832;
+  --teal:#4fc2cf; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63;
+  --hero:#0a5f78; --hero-2:#14a3b8; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.55;-webkit-text-size-adjust:100%}
+a{color:var(--teal)}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 48px;display:grid;gap:36px}
+.cover{display:grid;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:28px}
+.kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(46px,9vw,96px);line-height:.95;letter-spacing:-.01em;margin:0;max-width:12ch;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.sub{font-family:var(--f-label);font-weight:600;font-size:clamp(18px,2.6vw,24px);line-height:1.25;margin:0;max-width:32ch}
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px}
+.door{display:grid;grid-template-rows:auto 1fr auto;gap:14px;text-decoration:none;color:inherit;border-radius:18px;padding:24px;min-height:250px;position:relative;overflow:hidden;transition:transform .15s ease}
+.door:hover{transform:translateY(-2px)}
+.door h2{font-family:var(--f-display);font-weight:400;font-size:38px;line-height:1;margin:0}
+.door p{margin:0;font-size:17px}
+.door .meta{font-family:var(--f-mono);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 16px}
+.door .go{font-family:var(--f-label);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:14px}
+.book{background:var(--sheet);border:1px solid var(--rule);background-image:linear-gradient(to right,transparent 0 10px,var(--red) 10px 11px,transparent 11px 14px,var(--red) 14px 15px,transparent 15px);background-repeat:no-repeat;opacity:1}
+.book{padding-left:34px}
+.book .go{color:var(--teal)}
+.book .meta{color:var(--muted)}
+.app{background:radial-gradient(130% 150% at 100% 0%,var(--hero-2) 0%,var(--hero) 60%);color:var(--on-hero)}
+.app .meta{color:rgba(255,255,255,.85)}
+.app .go{color:#fff}
+.app>*{position:relative;z-index:1}
+.app::after{content:"";position:absolute;right:-70px;bottom:-110px;width:200px;height:200px;border-radius:50%;border:18px solid rgba(242,193,78,.85);border-right-color:transparent;transform:rotate(-30deg)}
+.gauge{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;max-width:220px}
+.gauge i{display:block;height:100%;background:var(--gold)}
+.lock{display:grid;gap:14px;background:var(--sheet);border:1px solid var(--rule);border-radius:18px;padding:24px;max-width:560px}
+.lock h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0}
+.lock p{margin:0;color:var(--muted);font-size:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input[type=text]{flex:1 1 220px;min-width:0;font:600 20px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:12px 14px;border:1.5px solid var(--rule);border-radius:12px;background:var(--paper);color:var(--ink)}
+input[type=text]:focus{border-color:var(--teal);outline:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:700 15px var(--f-label);letter-spacing:.04em;border-radius:999px;padding:12px 22px;border:0;cursor:pointer;background:var(--ink);color:var(--paper);text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--rule)}
+.btn:disabled{opacity:.6}
+.err{color:var(--red);font-family:var(--f-label);font-weight:600;font-size:15px;min-height:1.2em}
+.inst{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px 22px;align-items:start;background:var(--sheet);border:1px solid var(--rule);border-radius:18px;padding:24px}
+.inst .ico{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.inst h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;line-height:1.1}
+.inst p{margin:0;font-size:17px}.inst .small{font-size:15px;color:var(--muted)}
+.stack{display:grid;gap:12px;min-width:0}
+.how{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:17px}.how:empty{display:none}
+.how b{font-family:var(--f-label);font-weight:700}
+@media (max-width:520px){.inst{grid-template-columns:1fr}}
+.tools{display:grid;gap:14px;border-top:1px solid var(--rule);padding-top:24px}
+.tools h3{font-family:var(--f-label);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted);margin:0}
+.tools p{margin:0;font-size:16px;color:var(--muted);max-width:62ch}
+.foot{font-family:var(--f-label);font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+.foot button{font:inherit;color:var(--teal);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+</style>
+
+<main class="wrap">
+  <header class="cover">
+    <span class="kicker">Le livre et l’appli · édition <span id="yr">2026</span></span>
+    <h1>Ma gestion du <em>cashflow</em></h1>
+    <p class="sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
+  </header>
+
+  <section class="inst" id="inst-sec" hidden aria-labelledby="inst-h">
+    <img src="icons/icon-192.png" width="96" height="96" alt="" class="ico">
+    <div class="stack">
+      <h2 id="inst-h">Installe l’application</h2>
+      <p>Le livre et l’appli s’ouvrent uniquement depuis l’application installée sur ton téléphone ou ton ordinateur. Une icône sur ton écran d’accueil, tes chiffres gardés sur ton appareil, et tout fonctionne même sans connexion.</p>
+      <div class="row"><button class="btn" id="inst" hidden>Installer l’application</button></div>
+      <ol class="how" id="how"></ol>
+      <p class="small">Ensuite, ouvre l’application depuis son icône et saisis ton code d’accès, reçu dans l’e-mail d’achat.</p>
+    </div>
+  </section>
+
+  <section class="lock" id="lock" hidden aria-labelledby="lock-h">
+    <h2 id="lock-h">Ton code d’accès</h2>
+    <p>Il se trouve dans l’e-mail reçu après ton achat. Tu ne le saisis qu’une fois, à la première ouverture.</p>
+    <form class="row" id="code-f" novalidate>
+      <input type="text" id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code d’accès" placeholder="XXXX-2026">
+      <button class="btn" type="submit" id="code-go">Entrer</button>
+    </form>
+    <p class="err" id="code-err" role="alert"></p>
+  </section>
+
+  <section class="doors" id="doors" hidden aria-label="Choisis">
+    <a class="door book" href="livre.html">
+      <span class="kicker">Le livre</span>
+      <div style="display:grid;gap:10px;align-content:start"><h2>Lire</h2><p>L’histoire de Léo, dix chapitres, des quiz et ton carnet à remplir au fil des pages.</p></div>
+      <div style="display:grid;gap:8px"><div class="meta"><span id="b-prog">Pas encore commencé</span><span id="b-carnet"></span></div><div class="gauge" aria-hidden="true"><i id="b-g" style="width:0%"></i></div><span class="go">Ouvrir le livre →</span></div>
+    </a>
+    <a class="door app" href="appli.html">
+      <span class="kicker" style="color:#fff">L’appli</span>
+      <div style="display:grid;gap:10px;align-content:start"><h2>Jouer</h2><p>Ta feuille financière : recettes, dépenses, actifs, passifs, et ta jauge de sortie de la Rat Race.</p></div>
+      <div style="display:grid;gap:8px"><div class="meta"><span id="a-state">Ta feuille t’attend</span></div><span class="go">Ouvrir l’appli →</span></div>
+    </a>
+  </section>
+
+  <section class="tools" id="tools" hidden>
+    <h3>Sur cet appareil</h3>
+    <p>Tes chiffres restent dans ce navigateur, sur cet appareil : rien n’est envoyé sur internet. Exporte une sauvegarde chaque mois depuis l’appli (Réglages › Sauvegarde) : c’est elle qui te permet de changer de téléphone.</p>
+    <div class="foot"><span>Version <span id="ver"></span> · chiffres fiscaux <span id="fy"></span></span><button type="button" id="upd">Rechercher une mise à jour</button><span>Éducation financière, pas un conseil personnalisé.</span></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const S=window.CFShell,P=window.CF_PARAMS||{};
+  const $=id=>document.getElementById(id);
+  const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+  if(P.year)$('yr').textContent=P.year;
+  function home(){
+    $('lock').hidden=true;$('doors').hidden=false;$('tools').hidden=false;
+    $('ver').textContent=S.version;$('fy').textContent=(P.year||'')+(P.version?' ('+P.version+')':'');
+    const done=get('rr-ebook-done',{}),nd=Object.values(done).filter(Boolean).length,nq=9;
+    if(nd){$('b-prog').textContent=nd+' quiz réussis sur '+nq;$('b-g').style.width=Math.min(100,nd/nq*100)+'%'}
+    const cn=get('rr-carnet',null);if(cn&&Object.keys(cn).some(k=>!k.startsWith('_')))$('b-carnet').textContent='Carnet commencé';
+    const cfg=get('mgc:db:fin/config',null);
+    if(cfg&&cfg.player&&cfg.player.name)$('a-state').textContent='Feuille de '+cfg.player.name;
+    else if(cfg)$('a-state').textContent='Ta feuille est créée';
+  }
+  function installScreen(){
+    $('inst-sec').hidden=false;
+    const ua=navigator.userAgent,ios=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const mac=/Macintosh/.test(ua)&&!ios,android=/Android/i.test(ua),firefox=/Firefox|FxiOS/.test(ua),safari=/Safari/.test(ua)&&!/Chrome|CriOS|Edg|FxiOS|Firefox/.test(ua);
+    let steps;
+    if(ios)steps=['Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut).','Choisis <b>Sur l’écran d’accueil</b>, puis <b>Ajouter</b>.','Ouvre l’application depuis sa nouvelle icône.'];
+    else if(android)steps=['Touche <b>Installer l’application</b> ci-dessus, ou le menu <b>⋮</b> puis <b>Installer l’application</b> (ou <b>Ajouter à l’écran d’accueil</b>).','Ouvre l’application depuis sa nouvelle icône.'];
+    else if(mac&&safari)steps=['Dans le menu <b>Fichier</b> de Safari, choisis <b>Ajouter au Dock</b>.','Ouvre l’application depuis le Dock.'];
+    else if(firefox)steps=['Firefox sur ordinateur n’installe pas les applications web : ouvre cette page dans <b>Chrome</b>, <b>Edge</b> ou <b>Safari</b>.'];
+    else steps=['Clique sur <b>Installer l’application</b> ci-dessus, ou sur l’icône d’installation à droite de la barre d’adresse.','Ouvre l’application depuis ton bureau, ton Dock ou le menu Démarrer.'];
+    $('how').innerHTML=steps.map(x=>'<li>'+x+'</li>').join('');
+  }
+  function doneInstall(){$('inst').hidden=true;$('how').innerHTML='<li>C’est installé. Ouvre l’application depuis son icône pour commencer.</li>'}
+  let deferred=null;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!S.installed)$('inst').hidden=false});
+  $('inst').addEventListener('click',async()=>{if(!deferred)return;deferred.prompt();let ch=null;try{ch=await deferred.userChoice}catch(e){}deferred=null;$('inst').hidden=true;if(ch&&ch.outcome==='accepted')doneInstall()});
+  window.addEventListener('appinstalled',doneInstall);
+  $('upd').addEventListener('click',()=>S.checkUpdate(true));
+  $('code-f').addEventListener('submit',async e=>{e.preventDefault();const v=$('code').value;$('code-err').textContent='';
+    if(!S.norm(v)){$('code-err').textContent='Saisis ton code.';return}
+    $('code-go').disabled=true;
+    try{const ok=await S.tryCode(v);if(ok)home();else $('code-err').textContent='Ce code ne correspond pas. Vérifie-le dans ton e-mail d’achat (les tirets et les espaces ne comptent pas).'}
+    catch(err){$('code-err').textContent='Ouvre cette page depuis son adresse internet (https) pour saisir ton code.'}
+    finally{$('code-go').disabled=false}});
+  if(!S.installed)installScreen();
+  else if(S.unlocked)home();else{$('lock').hidden=false;setTimeout(()=>$('code').focus(),50)}
+})();
+</script>
+</body></html>
