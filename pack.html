@@ -1,0 +1,287 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ma gestion du cashflow · le livre et l’appli</title><meta name="theme-color" content="#14251f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cashflow"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="stylesheet" href="fonts.css"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<meta name="description" content="Le livre et l’appli pour comprendre où va ton argent, construire des revenus qui travaillent pour toi et sortir de la Rat Race. 39 €, une fois, mises à jour incluses.">
+<meta property="og:title" content="Ma gestion du cashflow · le livre et l’appli">
+<meta property="og:description" content="Sortir de la Rat Race et atteindre l’indépendance financière : un livre-histoire, ton carnet, et l’appli qui tient ta feuille chaque mois.">
+<meta property="og:image" content="https://ma-gestion-cashflow.vercel.app/icons/icon-512.png">
+<style>
+/* Page de vente : la couverture du livre en grand, puis un registre. Chiffres en mono, encre verte, or pour l'objectif. */
+:root{
+  --paper:#f3f5f1; --sheet:#fbfcfa; --ink:#14251f; --muted:#5d6e66; --rule:#d5ded8; --ledger:#e3ebe5;
+  --teal:#0b7f8f; --teal-soft:#d9eef0; --gold:#c48a12; --gold-soft:#f6ead0; --red:#c2412d; --green:#2a7a4b;
+  --deep:#0e2b26; --on-deep:#eef3ef;
+  --f-display:"Gloock",Georgia,serif;
+  --f-body:"Source Serif 4",Charter,Georgia,serif;
+  --f-label:"IBM Plex Sans Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832; --ledger:#1d2a25;
+  --teal:#4fc2cf; --teal-soft:#123437; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63; --green:#5cc489;
+  --deep:#08130f; --on-deep:#e4ece7; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1714; --sheet:#151f1b; --ink:#e4ece7; --muted:#9aaba3; --rule:#2a3832; --ledger:#1d2a25;
+  --teal:#4fc2cf; --teal-soft:#123437; --gold:#e3b14a; --gold-soft:#33290f; --red:#f07a63; --green:#5cc489;
+  --deep:#08130f; --on-deep:#e4ece7; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:19px;line-height:1.6;-webkit-text-size-adjust:100%}
+a{color:var(--teal)}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+.in{max-width:1080px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.narrow{max-width:700px}
+section{padding-block:64px}
+.kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(32px,5.4vw,52px);line-height:1.05;letter-spacing:-.005em}
+h3{font-family:var(--f-label);font-weight:700;font-size:21px;letter-spacing:.01em}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font:700 17px var(--f-label);letter-spacing:.04em;border-radius:999px;padding:16px 30px;background:var(--gold);color:#14251f;text-decoration:none;box-shadow:0 8px 24px rgba(196,138,18,.28);transition:transform .15s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn small{font:600 15px var(--f-mono);opacity:.85}
+.btn.dark{background:var(--ink);color:var(--paper);box-shadow:none}
+
+/* Couverture */
+.hero{padding-block:48px 72px;border-bottom:2px solid var(--ink)}
+.hero .in{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
+.hero h1{font-family:var(--f-display);font-weight:400;font-size:clamp(52px,9vw,104px);line-height:.93;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero .sub{font-family:var(--f-label);font-weight:600;font-size:clamp(20px,2.6vw,26px);line-height:1.25;max-width:30ch}
+.hero .promise{color:var(--muted);max-width:44ch;font-size:20px}
+.hero .copy{display:grid;gap:20px;min-width:0}
+.hero .cta{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center}
+.hero .cta span{font-family:var(--f-label);font-size:15px;color:var(--muted)}
+.phones{position:relative;min-height:640px}
+.phone{position:absolute;width:62%;border-radius:30px;border:8px solid #14251f;background:#14251f;box-shadow:0 26px 60px rgba(14,43,38,.28);overflow:hidden}
+.phone img{display:block;width:100%;height:auto}
+.phone.a{right:0;top:0;z-index:2}
+.phone.b{left:0;top:70px;transform:rotate(-4deg)}
+
+/* Boucle */
+.loop{background:var(--sheet)}
+.loop .in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.loop .txt{display:grid;gap:18px}
+.cycle{display:grid;gap:10px;font-family:var(--f-mono);font-size:16px}
+.cycle div{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border:1px solid var(--rule);border-radius:12px;background:var(--paper)}
+.cycle div b{font-weight:600}
+.cycle .up{color:var(--green)}.cycle .dn{color:var(--red)}
+.cycle .tot{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* Contenu */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;margin-top:36px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;display:grid;gap:18px;align-content:start}
+.card .tag{font-family:var(--f-label);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px}
+.card.book .tag{color:var(--teal)}.card.app .tag{color:var(--gold)}
+.card h3{font-family:var(--f-display);font-weight:400;font-size:34px;line-height:1.05}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.card li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:17px;line-height:1.5}
+.card li::before{content:"";width:10px;height:10px;margin-top:8px;border-radius:2px;background:var(--teal)}
+.card.app li::before{background:var(--gold);border-radius:50%}
+
+/* Étapes */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:22px;margin-top:36px;counter-reset:s}
+.step{display:grid;gap:14px;align-content:start}
+.step figure{margin:0;border-radius:22px;overflow:hidden;border:1px solid var(--rule);background:var(--sheet);aspect-ratio:3/4;max-width:100%}
+.step figure img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.step h3{display:flex;gap:12px;align-items:baseline}
+.step h3::before{counter-increment:s;content:counter(s);font:600 15px var(--f-mono);color:var(--paper);background:var(--ink);border-radius:50%;width:30px;height:30px;display:inline-grid;place-items:center;flex:none}
+.step p{color:var(--muted);font-size:17px}
+
+/* Promesses */
+.deep{background:var(--deep);color:var(--on-deep)}
+.deep .kicker{color:var(--gold)}
+.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:28px;margin-top:32px}
+.trust div{display:grid;gap:8px;border-top:1px solid rgba(238,243,239,.25);padding-top:16px}
+.trust b{font-family:var(--f-label);font-size:19px}
+.trust p{opacity:.8;font-size:16px}
+
+/* Pour qui */
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:24px;margin-top:32px}
+.who div{display:grid;gap:12px;align-content:start}
+.who ul{margin:0;padding-left:1.1em;display:grid;gap:8px;font-size:17px}
+.who .no{color:var(--muted)}
+
+/* Prix */
+.price .box{background:var(--sheet);border:2px solid var(--ink);border-radius:24px;padding:36px;display:grid;gap:22px;max-width:620px;margin:32px auto 0}
+.price .amount{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.price .amount b{font:400 clamp(64px,12vw,96px)/1 var(--f-display)}
+.price .amount span{font-family:var(--f-label);font-size:18px;color:var(--muted)}
+.price ul{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:17px}
+.price li::before{content:"✓  ";color:var(--green);font-weight:700}
+.price .btn{justify-self:stretch}
+.price .fine{font-family:var(--f-label);font-size:14px;color:var(--muted)}
+
+/* FAQ */
+.faq{display:grid;gap:12px;margin-top:28px}
+details{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:16px 20px}
+summary{cursor:pointer;font-family:var(--f-label);font-weight:700;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--f-mono);color:var(--teal)}
+details[open] summary::after{content:"−"}
+details p{margin-top:10px;font-size:17px;color:var(--muted)}
+
+footer{padding-block:36px 48px;border-top:1px solid var(--rule)}
+footer .in{display:flex;flex-wrap:wrap;gap:8px 24px;font-family:var(--f-label);font-size:14px;color:var(--muted)}
+
+@media (max-width:860px){
+  .hero .in,.loop .in{grid-template-columns:1fr}
+  .phones{min-height:0;height:min(150vw,640px);max-width:440px;width:100%;margin:0 auto}
+  section{padding-block:48px}
+  .price .box{padding:26px}
+}
+</style>
+
+<header class="hero">
+  <div class="in">
+    <div class="copy">
+      <span class="kicker">Le livre + l’appli · édition 2026</span>
+      <h1>Ma gestion du <em>cashflow</em></h1>
+      <p class="sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
+      <p class="promise">Comprends où va ton argent, construis des revenus qui travaillent pour toi, et vois chaque mois combien il te manque pour ne plus dépendre de ton travail.</p>
+      <div class="cta"><a class="btn" href="#prix" data-order>Je veux le pack <small>39 €</small></a><span>Paiement unique · mises à jour incluses</span></div>
+    </div>
+    <div class="phones" aria-hidden="true">
+      <div class="phone b"><img src="shots/livre.webp" alt="" width="600" height="1298" loading="eager"></div>
+      <div class="phone a"><img src="shots/feuille.webp" alt="" width="600" height="1298" loading="eager"></div>
+    </div>
+  </div>
+</header>
+
+<section class="loop">
+  <div class="in">
+    <div class="txt">
+      <span class="kicker">La boucle</span>
+      <h2>Tu gagnes plus, tu dépenses plus, et le mois suivant tout recommence.</h2>
+      <p>Le salaire arrive, les prélèvements partent, et il reste un peu, ou rien. Une augmentation ? Le loyer suit, la voiture aussi. C’est la Rat Race : tu cours, mais la roue tourne avec toi.</p>
+      <p>On n’en sort ni en gagnant plus ni en se privant de tout, mais quand <b>tes revenus passifs couvrent tes dépenses</b>. Ce pack te montre le chemin, et te donne l’outil pour mesurer chaque pas.</p>
+    </div>
+    <div class="cycle" role="img" aria-label="Exemple de mois dans la Rat Race">
+      <div><span>Salaire net</span><b class="up">+2 400 €</b></div>
+      <div><span>Loyer, crédit auto, abonnements</span><b class="dn">−1 580 €</b></div>
+      <div><span>Courses, essence, sorties</span><b class="dn">−790 €</b></div>
+      <div><span>Revenus passifs</span><b>0 €</b></div>
+      <div class="tot"><span>Ce qui reste</span><b>+30 €</b></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="in">
+    <span class="kicker">Ce que tu reçois</span>
+    <h2>Un livre pour comprendre. Une appli pour agir.</h2>
+    <div class="two">
+      <article class="card book">
+        <span class="tag">Le livre</span>
+        <h3>L’histoire de Léo, 34 ans</h3>
+        <p>Un roman d’apprentissage financier en 10 chapitres : Léo découvre pourquoi il court sans avancer, et construit, chiffre après chiffre, des revenus qui travaillent pour lui. Environ 1 h 30 de lecture.</p>
+        <ul>
+          <li>Actifs, passifs, cashflow : les règles du jeu, appliquées à la France d’aujourd’hui</li>
+          <li>Salarié, micro-entreprise, EURL, SASU : ce que chaque statut te coûte vraiment</li>
+          <li>Immobilier (location vide, meublée), placements (livrets, PEA, assurance-vie) et leur fiscalité</li>
+          <li>Un quiz par chapitre et deux calculateurs pour passer de la lecture à tes chiffres</li>
+          <li><b>Ton carnet</b> : à chaque chapitre, tu notes tes propres réponses</li>
+        </ul>
+      </article>
+      <article class="card app">
+        <span class="tag">L’appli</span>
+        <h3>Ta feuille financière, chaque mois</h3>
+        <p>Ta feuille de jeu : ce qui entre, ce qui sort, ce que tu possèdes, ce que tu dois. Et la jauge qui te dit où tu en es dans ta sortie de la Rat Race.</p>
+        <ul>
+          <li>Recettes, dépenses, actifs, passifs, et ton revenu passif face à tes dépenses</li>
+          <li>Prélèvements et revenus réguliers inscrits tout seuls, à confirmer d’un geste</li>
+          <li>Micro-entrepreneur : cotisations URSSAF calculées à chaque recette</li>
+          <li>Biens immobiliers, placements, prévisions, mémos et rappels</li>
+          <li>Un point financier complet en PDF, à envoyer à ton comptable</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--sheet)">
+  <div class="in">
+    <span class="kicker">Comment ça marche</span>
+    <h2>Lis, note, et ta feuille se remplit.</h2>
+    <div class="steps">
+      <div class="step"><figure><img src="shots/livre.webp" alt="Un chapitre du livre avec le carnet à remplir" width="600" height="1298" loading="lazy"></figure><h3>Lis et remplis ton carnet</h3><p>Chaque chapitre finit par quelques questions sur ta situation : dépenses, crédits, statut, biens, placements, ton rêve.</p></div>
+      <div class="step"><figure><img src="shots/onboard.webp" alt="L’appli propose de créer la feuille à partir du carnet" width="600" height="1298" loading="lazy"></figure><h3>L’appli crée ta feuille</h3><p>À la première ouverture, elle reprend ton carnet : charges, revenus, entreprise, biens et objectifs sont déjà là.</p></div>
+      <div class="step"><figure><img src="shots/feuille.webp" alt="La feuille financière avec la jauge de sortie" width="600" height="1298" loading="lazy"></figure><h3>Fais ton PAYDAY chaque mois</h3><p>Un quart d’heure par mois : tu confirmes, tu ajustes, et tu vois ta jauge avancer vers la sortie.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="deep">
+  <div class="in">
+    <span class="kicker">Tes chiffres restent à toi</span>
+    <h2>Pas de compte, pas d’abonnement, pas de banque connectée.</h2>
+    <div class="trust">
+      <div><b>Sur ton appareil</b><p>Tes données sont enregistrées sur ton téléphone ou ton ordinateur. Rien n’est envoyé sur internet.</p></div>
+      <div><b>Même sans connexion</b><p>Installé sur ton écran d’accueil, le pack fonctionne hors ligne, dans le métro comme en voyage.</p></div>
+      <div><b>Mis à jour chaque année</b><p>Taux de cotisations, plafonds, fiscalité : les chiffres sont actualisés, un bandeau te prévient.</p></div>
+      <div><b>iPhone, Android, ordinateur</b><p>Safari, Chrome ou Edge. Une sauvegarde à exporter te permet de changer d’appareil.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="in">
+    <span class="kicker">Pour qui</span>
+    <h2>Pour ceux qui veulent voir clair, pas pour ceux qui cherchent un coup.</h2>
+    <div class="who">
+      <div><h3>C’est pour toi si…</h3><ul>
+        <li>tu gagnes ta vie mais tu ne sais jamais vraiment où part l’argent ;</li>
+        <li>tu es salarié, micro-entrepreneur ou indépendant, et tu veux savoir ce que ton statut te coûte ;</li>
+        <li>tu as un bien en location, ou tu y penses, et tu veux en connaître le vrai cashflow ;</li>
+        <li>tu veux un objectif chiffré et une date, pas seulement une envie de liberté.</li></ul></div>
+      <div class="no"><h3>Ce n’est pas pour toi si…</h3><ul>
+        <li>tu cherches une méthode pour devenir riche vite ;</li>
+        <li>tu veux des conseils d’achat d’actions ou de crypto : ce n’est pas un conseil en investissement ;</li>
+        <li>tu veux une appli reliée automatiquement à ta banque.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="price" id="prix" style="background:var(--sheet)">
+  <div class="in narrow">
+    <span class="kicker">Le pack</span>
+    <h2>Le livre et l’appli, une fois pour toutes.</h2>
+    <div class="box">
+      <div class="amount"><b class="num" style="font-family:var(--f-display)">39 €</b><span>paiement unique<br>TVA non applicable, art. 293 B du CGI</span></div>
+      <ul>
+        <li>Le livre complet : 10 chapitres, quiz, calculateurs et ton carnet</li>
+        <li>L’appli : feuille mensuelle, URSSAF, immobilier, placements, prévisions</li>
+        <li>Le carnet qui crée ta feuille de départ dans l’appli</li>
+        <li>Les mises à jour des chiffres fiscaux chaque année</li>
+        <li>Accès immédiat après le paiement, par e-mail</li>
+      </ul>
+      <a class="btn" href="#prix" data-order>Je veux le pack <small>39 €</small></a>
+      <p class="fine">Contenu numérique livré immédiatement : en commandant, tu demandes l’accès tout de suite et tu renonces au délai de rétractation de 14 jours.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="in narrow">
+    <span class="kicker">Questions</span>
+    <h2>Avant de te lancer</h2>
+    <div class="faq">
+      <details><summary>Comment je reçois le pack ?</summary><p>Juste après le paiement, tu reçois un e-mail avec l’adresse de l’appli et ton code d’accès. Tu l’installes sur ton écran d’accueil en deux gestes, et le livre est dedans.</p></details>
+      <details><summary>Ça marche sur iPhone, Android et ordinateur ?</summary><p>Oui. Safari sur iPhone et iPad, Chrome sur Android, Chrome, Edge ou Safari sur ordinateur. Tu peux l’installer sur plusieurs appareils avec le même code.</p></details>
+      <details><summary>Où sont stockés mes chiffres ?</summary><p>Sur ton appareil uniquement, dans l’application. Personne d’autre n’y a accès, pas même moi. Pense à exporter une sauvegarde chaque mois : c’est elle qui te permet de changer de téléphone.</p></details>
+      <details><summary>Il faut s’y connaître en finance ?</summary><p>Non. Le livre part de zéro, avec une histoire et des exemples chiffrés. L’appli reprend ton carnet pour que tu n’aies pas à tout saisir.</p></details>
+      <details><summary>C’est un abonnement ?</summary><p>Non : 39 €, une seule fois. Les mises à jour annuelles des chiffres sont incluses tant que le pack est commercialisé.</p></details>
+      <details><summary>Est-ce un conseil en investissement ?</summary><p>Non. C’est de l’éducation financière et un outil de suivi. Pour une décision personnelle, notamment fiscale ou patrimoniale, rapproche-toi d’un professionnel.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="in"><span>Ma gestion du cashflow · édition 2026</span><span>Éducation financière, pas un conseil personnalisé.</span></div>
+</footer>
+
+<script>
+/* Adresse du bon de commande systeme.io : à renseigner une fois le tunnel créé. */
+const ORDER_URL='';
+if(ORDER_URL)document.querySelectorAll('[data-order]').forEach(a=>{a.href=ORDER_URL});
+</script>
+</body></html>
