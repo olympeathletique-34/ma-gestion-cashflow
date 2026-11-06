@@ -41,31 +41,42 @@ h3{font-family:var(--f-label);font-weight:700;font-size:21px;letter-spacing:.01e
 .btn small{font:600 15px var(--f-mono);opacity:.85}
 .btn.dark{background:var(--ink);color:var(--paper);box-shadow:none}
 
-/* Couverture : lever de soleil sur la montagne, comme l'icône. Bandeau volontairement sombre dans les deux thèmes. */
-.sunrise{--night:#052926;--night2:#0b463f;--cream:#f7efd6;--sun1:#fff4b8;--sun2:#ffc53d;--sun3:#ff7a35;
-  position:relative;overflow:hidden;isolation:isolate;color:var(--cream);
-  background:radial-gradient(circle at 97% 4%,#fff6d2 0,#ffe39a 3%,rgba(255,170,90,.6) 4.6%,rgba(255,112,80,.22) 15%,rgba(255,112,80,0) 38%),linear-gradient(172deg,var(--night) 0%,var(--night2) 100%)}
-.sunrise .ridge{position:absolute;left:0;right:0;bottom:0;width:100%;height:34%;z-index:-1}
-.tt{font-family:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;text-transform:uppercase;line-height:.86;margin:0;display:grid;justify-items:start}
-.tt .t1{font-weight:800;font-size:clamp(26px,4.2vw,48px);letter-spacing:.07em;color:var(--cream)}
-.tt .t2{font-weight:900;font-size:clamp(78px,14.5vw,172px);letter-spacing:.005em;background:linear-gradient(180deg,var(--sun1) 6%,var(--sun2) 50%,var(--sun3) 98%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.02em}
-.tt .arrow{display:block;width:min(100%,520px);height:auto;margin-top:2px}
-.chip{justify-self:start;font:600 13px/1 var(--f-mono);letter-spacing:.06em;color:var(--sun2);border:1px solid rgba(255,197,61,.45);border-radius:999px;padding:8px 14px}
-.hero{padding-block:52px 84px}
-.hero .in{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
-.hero .sub{font-family:var(--f-label);font-weight:600;font-size:clamp(20px,2.6vw,26px);line-height:1.25;max-width:30ch;color:var(--cream)}
-.hero .promise{color:rgba(247,239,214,.78);max-width:44ch;font-size:20px}
-.hero .copy{display:grid;gap:20px;min-width:0;container-type:inline-size}
-.hero .tt .t2{font-size:min(172px,23cqi)}
-.hero .tt .t1{font-size:min(48px,7.4cqi)}
-.hero .cta{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center}
-.hero .cta span{font-family:var(--f-label);font-size:15px;color:rgba(247,239,214,.72)}
-.hero .btn{background:linear-gradient(180deg,#ffd257,#ff9a3c);color:#2a1606;box-shadow:0 10px 28px rgba(255,140,50,.35)}
-.phones{position:relative;min-height:640px}
-.phone{position:absolute;width:62%;border-radius:30px;border:8px solid #14251f;background:#14251f;box-shadow:0 26px 60px rgba(14,43,38,.28);overflow:hidden}
-.phone img{display:block;width:100%;height:auto}
-.phone.a{right:0;top:0;z-index:2}
-.phone.b{left:0;top:70px;transform:rotate(-4deg)}
+
+/* Couverture : reprise de la couverture imprimée du livre. Couleurs fixes (papier crème) dans les deux thèmes. */
+.couv{--cv-paper:#f7f0de;--cv-paper2:#efe4c8;--cv-ink:#12404a;--cv-muted:#3d5d63;--cv-gold:#e29b12;--cv-gold2:#c9840a;--cv-band:#0e5158;
+  --cv-serif:"Playfair Display","Didot","Bodoni 72",Georgia,serif;--cv-hand:"Caveat","Segoe Print","Bradley Hand",cursive;
+  background:radial-gradient(120% 90% at 50% 0%,var(--cv-paper) 40%,var(--cv-paper2) 100%);color:var(--cv-ink);color-scheme:light}
+.couv .cv-in{container-type:inline-size;display:grid;gap:18px;min-width:0}
+.cv-label{display:grid;grid-template-columns:minmax(16px,1fr) auto minmax(16px,1fr);align-items:center;gap:14px;font:500 clamp(11px,2.7cqi,15px)/1.35 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;text-align:center;color:var(--cv-ink)}
+.cv-label::before,.cv-label::after{content:"";height:1.5px;background:var(--cv-ink);opacity:.55}
+.cv-label b{font-weight:700;letter-spacing:.18em}
+.cv-title{margin:0;font-family:var(--cv-serif);font-weight:900;line-height:.92;display:grid;justify-items:center;text-align:center;text-wrap:balance}
+.cv-title .a{font-size:min(84px,13.2cqi);letter-spacing:-.01em;color:var(--cv-ink)}
+.cv-title .b{font-style:italic;font-size:min(148px,23cqi);letter-spacing:-.015em;color:var(--cv-gold);margin-top:-.04em}
+.cv-brush{display:block;width:min(62cqi,420px);height:auto;margin:-2px auto 0}
+.cv-sub{margin:0;text-align:center;font:italic 600 clamp(18px,4.6cqi,30px)/1.25 "Source Serif 4",Charter,Georgia,serif;color:var(--cv-ink);text-wrap:balance}
+.cv-check{list-style:none;margin:0;padding:0;display:grid;gap:4px;font:700 clamp(24px,5.4cqi,32px)/1.15 var(--cv-hand);color:var(--cv-ink)}
+.cv-check li{display:flex;align-items:center;gap:10px}
+.cv-check li:nth-child(even){padding-left:.35em}
+.cv-check svg{flex:none;width:.85em;height:.85em}
+.cv-band{background:var(--cv-band);color:#fff;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.cv-band div{display:grid;justify-items:center;align-content:start;gap:10px;padding:20px 8px;text-align:center;font:700 clamp(10px,1.4vw,14px)/1.3 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.cv-band div+div{border-left:1.5px solid rgba(255,255,255,.35)}
+.cv-band svg{width:46px;height:46px}
+.cv-tag{display:grid;grid-template-columns:minmax(16px,1fr) auto minmax(16px,1fr);align-items:center;gap:14px;font:600 clamp(11px,1.5vw,15px)/1.3 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;text-align:center;color:var(--cv-ink);padding:16px 0}
+.cv-tag::before,.cv-tag::after{content:"";height:1.5px;background:var(--cv-band);opacity:.7}
+.cv-cover{margin:0;justify-self:center;width:min(100%,420px)}
+.cv-cover img{display:block;width:100%;height:auto;border-radius:4px 10px 10px 4px;box-shadow:-10px 0 0 -4px #d9cba6,0 30px 60px rgba(18,64,74,.32),0 4px 10px rgba(18,64,74,.18);transform:rotate(2deg)}
+@media (max-width:620px){.cv-band{grid-template-columns:repeat(2,minmax(0,1fr))}.cv-band div:nth-child(3){border-left:0}.cv-band div:nth-child(n+3){border-top:1.5px solid rgba(255,255,255,.35)}}
+
+.hero{padding-block:34px 0}
+.hero .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:44px;align-items:center;padding-bottom:42px}
+.hero .cv-act{display:flex;flex-wrap:wrap;gap:22px 40px;align-items:center;justify-content:center;margin-top:6px}
+.hero .cta{display:grid;gap:10px;justify-items:center}
+.hero .cta span{font-family:var(--f-label);font-size:15px;color:var(--cv-muted)}
+.hero .btn{background:var(--cv-gold);color:#1b2a24;box-shadow:0 10px 26px rgba(226,155,18,.35)}
+.bandwrap{background:var(--cv-band)}
+@media (max-width:860px){.hero .grid{grid-template-columns:1fr}.cv-cover{width:min(78%,360px)}}
 
 /* Boucle */
 .loop{background:var(--sheet)}
@@ -135,28 +146,26 @@ footer .in{display:flex;flex-wrap:wrap;gap:8px 24px;font-family:var(--f-label);f
 
 @media (max-width:860px){
   .hero .in,.loop .in{grid-template-columns:1fr}
-  .phones{min-height:0;height:min(150vw,640px);max-width:440px;width:100%;margin:0 auto}
   section{padding-block:48px}
   .price .box{padding:26px}
 }
 </style>
 
-<header class="hero sunrise">
-  <svg class="ridge" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150 L140 70 L230 120 L360 30 L470 110 L560 80 L690 140 L820 60 L930 120 L1050 50 L1200 110 L1200 220 L0 220Z" fill="#0d5249" opacity=".55"/><path d="M0 190 L160 130 L300 170 L450 110 L600 165 L760 120 L900 175 L1060 125 L1200 160 L1200 220 L0 220Z" fill="#0f6052" opacity=".7"/></svg>
-  <div class="in">
-    <div class="copy">
-      <span class="chip">LIVRE + APPLI · 2026</span>
-      <h1 class="tt"><span class="t1">Ma gestion du</span><span class="t2">Cashflow</span>
-        <svg class="arrow" viewBox="0 0 520 64" aria-hidden="true"><defs><linearGradient id="ar" x1="0" x2="1"><stop offset="0" stop-color="#ffc53d" stop-opacity=".2"/><stop offset="1" stop-color="#ffc53d"/></linearGradient></defs><path d="M4 58 C150 56 300 44 468 14.5" fill="none" stroke="url(#ar)" stroke-width="7" stroke-linecap="round"/><path d="M501 8.6 L466.5 29.5 L461.5 1.5Z" fill="#ffc53d"/></svg></h1>
-      <p class="sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
-      <p class="promise">Comprends où va ton argent, construis des revenus qui travaillent pour toi, et vois chaque mois combien il te manque pour ne plus dépendre de ton travail.</p>
-      <div class="cta"><a class="btn" href="#prix" data-order>Je veux le pack <small>39 €</small></a><span>Paiement unique · mises à jour incluses</span></div>
+<header class="hero couv">
+  <div class="in grid">
+    <div class="cv-in">
+      <p class="cv-label"><span>Le guide pratique pour prendre<br><b>le contrôle</b> de tes <b>finances</b></span></p>
+      <h1 class="cv-title"><span class="a">Ma gestion du</span><span class="b">cashflow</span></h1><svg class="cv-brush" viewBox="0 0 420 26" aria-hidden="true"><path d="M3 17.5 C70 9.5 170 5.5 262 6.2 C322 6.6 378 8.8 417 11.4 C381 11.6 330 11.6 268 12.6 C176 14.1 86 18.4 9 24.6 C5 24.9 1.5 21.2 3 17.5Z" fill="#e29b12"/><path d="M40 19.4 C120 13.2 220 10.6 330 10.4" fill="none" stroke="#f3c45a" stroke-width="1.3" stroke-linecap="round" opacity=".7"/></svg>
+      <p class="cv-sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
+      <div class="cv-act">
+        <ul class="cv-check"><li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="16" height="16" rx="2.5" fill="none" stroke="#12404a" stroke-width="2"/><path d="M6.5 12.5 L10.5 16.5 L21.5 3.5" fill="none" stroke="#0e7d86" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Comprendre</li><li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="16" height="16" rx="2.5" fill="none" stroke="#12404a" stroke-width="2"/><path d="M6.5 12.5 L10.5 16.5 L21.5 3.5" fill="none" stroke="#0e7d86" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Planifier</li><li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="16" height="16" rx="2.5" fill="none" stroke="#12404a" stroke-width="2"/><path d="M6.5 12.5 L10.5 16.5 L21.5 3.5" fill="none" stroke="#0e7d86" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Épargner</li><li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="16" height="16" rx="2.5" fill="none" stroke="#12404a" stroke-width="2"/><path d="M6.5 12.5 L10.5 16.5 L21.5 3.5" fill="none" stroke="#0e7d86" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Investir</li><li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="16" height="16" rx="2.5" fill="none" stroke="#12404a" stroke-width="2"/><path d="M6.5 12.5 L10.5 16.5 L21.5 3.5" fill="none" stroke="#0e7d86" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Profiter</li></ul>
+        <div class="cta"><a class="btn" href="#prix" data-order>Je veux le pack <small>39 €</small></a><span>Le livre + l’appli · paiement unique</span></div>
+      </div>
     </div>
-    <div class="phones" aria-hidden="true">
-      <div class="phone b"><img src="shots/livre.webp" alt="" width="600" height="1298" loading="eager"></div>
-      <div class="phone a"><img src="shots/feuille.webp" alt="" width="600" height="1298" loading="eager"></div>
-    </div>
+    <figure class="cv-cover"><img src="couverture.webp" alt="Couverture du livre « Ma gestion du cashflow »" width="640" height="905" loading="eager"></figure>
   </div>
+  <div class="bandwrap"><div class="in"><div class="cv-band"><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 25c0-7 6.5-11.5 15-11.5S39 18 39 25c0 3.4-1.6 6.3-4.2 8.3V39h-5v-3.4a20 20 0 0 1-11.6 0V39h-5v-5.7C10.6 31.3 9 28.4 9 25Z"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M39 23.5h3.2v5H38.6"/><circle cx="16" cy="23" r="1.3" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M20 14.2a5.5 5.5 0 0 1 8 0"/><circle fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" cx="24" cy="7.5" r="5"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M26.2 5.4a2.9 2.9 0 1 0 0 4.2M20.6 6.8h3.8M20.6 8.4h3.8"/></svg><span>Gérer<br>son budget</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 40h34"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="10" y="30" width="5" height="10"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="18.5" y="25" width="5" height="15"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="27" y="20" width="5" height="20"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="35.5" y="14" width="5" height="26"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 25 C18 22 28 16 38 7"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M31.5 7.2 38.5 6.2 37.6 13"/></svg><span>Faire fructifier<br>son argent</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 41c6-4 12-6 18-6s12 2 18 6"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 35c0-9 1.5-16 5-22"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c-5-3-11-3-15 1 5-1 9 0 12 2"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c3-5 9-6 13-3-4 0-8 1-10 4"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c6-1 11 2 12 7-3-3-7-4-10-4"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c-2 4-6 7-11 7 3-3 5-5 8-7"/></svg><span>Financer<br>ses projets</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-4-4-6-9-6-14s2-10 6-14c4 4 6 9 6 14s-2 10-6 14Z"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-6 0-11-3-14-9 3-1 7-1 10 1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c6 0 11-3 14-9-3-1-7-1-10 1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-8 1-14-1-19-6 3-2 6-2 9-1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c8 1 14-1 19-6-3-2-6-2-9-1"/></svg><span>Retrouver<br>un équilibre</span></div></div></div></div>
+  <div class="in"><p class="cv-tag"><span>Un parcours pas à pas vers une vie plus sereine</span></p></div>
 </header>
 
 <section class="loop">
