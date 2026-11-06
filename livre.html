@@ -30,40 +30,16 @@ h1,h2,h3,h4{text-wrap:balance;margin:0}
 @media (min-width:980px){.shell{grid-template-columns:270px minmax(0,1fr)}}
 
 
-/* Couverture : reprise de la couverture imprimée du livre. Couleurs fixes (papier crème) dans les deux thèmes. */
-.couv{--cv-paper:#f7f0de;--cv-paper2:#efe4c8;--cv-ink:#12404a;--cv-muted:#3d5d63;--cv-gold:#e29b12;--cv-gold2:#c9840a;--cv-band:#0e5158;
-  --cv-serif:"Playfair Display","Didot","Bodoni 72",Georgia,serif;--cv-hand:"Caveat","Segoe Print","Bradley Hand",cursive;
-  background:radial-gradient(120% 90% at 50% 0%,var(--cv-paper) 40%,var(--cv-paper2) 100%);color:var(--cv-ink);color-scheme:light}
-.couv .cv-in{container-type:inline-size;display:grid;gap:18px;min-width:0}
-.cv-label{display:grid;grid-template-columns:minmax(16px,1fr) auto minmax(16px,1fr);align-items:center;gap:14px;font:500 clamp(11px,2.7cqi,15px)/1.35 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;text-align:center;color:var(--cv-ink)}
-.cv-label::before,.cv-label::after{content:"";height:1.5px;background:var(--cv-ink);opacity:.55}
-.cv-label b{font-weight:700;letter-spacing:.18em}
-.cv-title{margin:0;font-family:var(--cv-serif);font-weight:900;line-height:.92;display:grid;justify-items:center;text-align:center;text-wrap:balance}
-.cv-title .a{font-size:min(84px,13.2cqi);letter-spacing:-.01em;color:var(--cv-ink)}
-.cv-title .b{font-style:italic;font-size:min(148px,23cqi);letter-spacing:-.015em;color:var(--cv-gold);margin-top:-.04em}
-.cv-brush{display:block;width:min(62cqi,420px);height:auto;margin:-2px auto 0}
-.cv-sub{margin:0;text-align:center;font:italic 600 clamp(18px,4.6cqi,30px)/1.25 "Source Serif 4",Charter,Georgia,serif;color:var(--cv-ink);text-wrap:balance}
-.cv-check{list-style:none;margin:0;padding:0;display:grid;gap:4px;font:700 clamp(24px,5.4cqi,32px)/1.15 var(--cv-hand);color:var(--cv-ink)}
-.cv-check li{display:flex;align-items:center;gap:10px}
-.cv-check li:nth-child(even){padding-left:.35em}
-.cv-check svg{flex:none;width:.85em;height:.85em}
-.cv-band{background:var(--cv-band);color:#fff;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.cv-band div{display:grid;justify-items:center;align-content:start;gap:10px;padding:20px 8px;text-align:center;font:700 clamp(10px,1.4vw,14px)/1.3 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}
-.cv-band div+div{border-left:1.5px solid rgba(255,255,255,.35)}
-.cv-band svg{width:46px;height:46px}
-.cv-tag{display:grid;grid-template-columns:minmax(16px,1fr) auto minmax(16px,1fr);align-items:center;gap:14px;font:600 clamp(11px,1.5vw,15px)/1.3 "IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;text-align:center;color:var(--cv-ink);padding:16px 0}
-.cv-tag::before,.cv-tag::after{content:"";height:1.5px;background:var(--cv-band);opacity:.7}
-.cv-cover{margin:0;justify-self:center;width:min(100%,420px)}
-.cv-cover img{display:block;width:100%;height:auto;border-radius:4px 10px 10px 4px;box-shadow:-10px 0 0 -4px #d9cba6,0 30px 60px rgba(18,64,74,.32),0 4px 10px rgba(18,64,74,.18);transform:rotate(2deg)}
-@media (max-width:620px){.cv-band{grid-template-columns:repeat(2,minmax(0,1fr))}.cv-band div:nth-child(3){border-left:0}.cv-band div:nth-child(n+3){border-top:1.5px solid rgba(255,255,255,.35)}}
-
-.cover{grid-column:1/-1;margin-top:16px;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(18,64,74,.16)}
-.cover .cv-top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:36px;align-items:center;padding:30px clamp(16px,4vw,48px) 30px}
-.cover .cv-desc{margin:0;max-width:60ch;color:var(--cv-muted);font-size:18px;text-align:center;justify-self:center}
-.cover-ledger{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;font-family:var(--f-mono);font-size:14px;color:var(--cv-muted)}
-.cover-ledger b{color:var(--cv-ink);font-weight:600}
-.cover .cv-tag{padding:12px clamp(16px,4vw,48px)}
-@media (max-width:820px){.cover .cv-top{grid-template-columns:1fr}.cover .cv-cover{width:min(70%,300px)}}
+/* Couverture : la première page du livre est sa couverture imprimée, en grand. */
+.cover{grid-column:1/-1;display:grid;justify-items:center;gap:26px;padding-block:20px 34px;border-bottom:1px solid var(--rule)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.book-cover{margin:0;width:min(100%,640px)}
+.book-cover img{display:block;width:100%;height:auto;border-radius:4px 12px 12px 4px;box-shadow:-12px 0 0 -5px #d9cba6,0 34px 70px rgba(18,64,74,.32),0 6px 14px rgba(18,64,74,.18)}
+.cover-meta{display:grid;justify-items:center;gap:12px;text-align:center;max-width:62ch}
+.cover-kick{margin:0;font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
+.cover-desc{margin:0;color:var(--muted);font-size:18px}
+.cover-ledger{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.cover-ledger b{color:var(--ink);font-weight:600}
 
 /* Sommaire */
 .toc{position:relative;padding-block:24px 8px}
@@ -202,19 +178,14 @@ td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:now
 </style>
 
 <div class="shell">
-  <header class="cover couv">
-    <div class="cv-top">
-      <div class="cv-in">
-        <p class="cv-label"><span>Le guide pratique pour prendre<br><b>le contrôle</b> de tes <b>finances</b></span></p>
-        <h1 class="cv-title"><span class="a">Ma gestion du</span><span class="b">cashflow</span></h1><svg class="cv-brush" viewBox="0 0 420 26" aria-hidden="true"><path d="M3 17.5 C70 9.5 170 5.5 262 6.2 C322 6.6 378 8.8 417 11.4 C381 11.6 330 11.6 268 12.6 C176 14.1 86 18.4 9 24.6 C5 24.9 1.5 21.2 3 17.5Z" fill="#e29b12"/><path d="M40 19.4 C120 13.2 220 10.6 330 10.4" fill="none" stroke="#f3c45a" stroke-width="1.3" stroke-linecap="round" opacity=".7"/></svg>
-        <p class="cv-sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
-        <p class="cv-desc">L’histoire de Léo, 34 ans, qui découvre pourquoi il court sans avancer, et comment il construit, chiffre après chiffre, des revenus qui travaillent pour lui. Les principes de « Père riche, père pauvre » de Robert Kiyosaki, appliqués à la France d’aujourd’hui : statuts, impôts, immobilier, placements.</p>
-        <div class="cover-ledger"><span>11 chapitres</span><span>9 quiz</span><span>2 calculateurs</span><span>Lecture ≈ <b>1 h 30</b></span></div>
-      </div>
-      <figure class="cv-cover"><img src="couverture.webp" alt="Couverture du livre « Ma gestion du cashflow »" width="640" height="905"></figure>
+  <header class="cover">
+    <h1 class="sr">Ma gestion du cashflow : sortir de la Rat Race et atteindre l’indépendance financière</h1>
+    <figure class="book-cover"><img src="couverture.webp" alt="Couverture du livre « Ma gestion du cashflow »" width="640" height="905"></figure>
+    <div class="cover-meta">
+      <p class="cover-kick">Un roman d’apprentissage financier · édition <span data-p="year" data-f="num">2026</span></p>
+      <p class="cover-desc">L’histoire de Léo, 34 ans, qui découvre pourquoi il court sans avancer, et comment il construit, chiffre après chiffre, des revenus qui travaillent pour lui. Les principes de « Père riche, père pauvre » de Robert Kiyosaki, appliqués à la France d’aujourd’hui : statuts, impôts, immobilier, placements.</p>
+      <div class="cover-ledger"><span>11 chapitres</span><span>9 quiz</span><span>2 calculateurs</span><span>Lecture ≈ <b>1 h 30</b></span></div>
     </div>
-    <div class="cv-band"><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 25c0-7 6.5-11.5 15-11.5S39 18 39 25c0 3.4-1.6 6.3-4.2 8.3V39h-5v-3.4a20 20 0 0 1-11.6 0V39h-5v-5.7C10.6 31.3 9 28.4 9 25Z"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M39 23.5h3.2v5H38.6"/><circle cx="16" cy="23" r="1.3" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M20 14.2a5.5 5.5 0 0 1 8 0"/><circle fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" cx="24" cy="7.5" r="5"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M26.2 5.4a2.9 2.9 0 1 0 0 4.2M20.6 6.8h3.8M20.6 8.4h3.8"/></svg><span>Gérer<br>son budget</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 40h34"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="10" y="30" width="5" height="10"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="18.5" y="25" width="5" height="15"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="27" y="20" width="5" height="20"/><rect fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" x="35.5" y="14" width="5" height="26"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 25 C18 22 28 16 38 7"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M31.5 7.2 38.5 6.2 37.6 13"/></svg><span>Faire fructifier<br>son argent</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 41c6-4 12-6 18-6s12 2 18 6"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 35c0-9 1.5-16 5-22"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c-5-3-11-3-15 1 5-1 9 0 12 2"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c3-5 9-6 13-3-4 0-8 1-10 4"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c6-1 11 2 12 7-3-3-7-4-10-4"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M29 13c-2 4-6 7-11 7 3-3 5-5 8-7"/></svg><span>Financer<br>ses projets</span></div><div><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-4-4-6-9-6-14s2-10 6-14c4 4 6 9 6 14s-2 10-6 14Z"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-6 0-11-3-14-9 3-1 7-1 10 1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c6 0 11-3 14-9-3-1-7-1-10 1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c-8 1-14-1-19-6 3-2 6-2 9-1"/><path fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M24 38c8 1 14-1 19-6-3-2-6-2-9-1"/></svg><span>Retrouver<br>un équilibre</span></div></div>
-    <p class="cv-tag"><span>Un roman d’apprentissage financier · édition <span data-p="year" data-f="num">2026</span></span></p>
   </header>
 
   <nav class="toc closed" id="toc" aria-label="Sommaire">
