@@ -29,15 +29,21 @@ h1,h2,h3,h4{text-wrap:balance;margin:0}
 .shell{display:grid;grid-template-columns:1fr;max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 80px;gap:0 48px}
 @media (min-width:980px){.shell{grid-template-columns:270px minmax(0,1fr)}}
 
-/* Couverture */
-.cover{grid-column:1/-1;padding-block:44px 30px;border-bottom:2px solid var(--ink);display:grid;gap:18px}
-.cover .kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--teal)}
-.cover h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,92px);line-height:.96;letter-spacing:-.01em;max-width:13ch}
-.cover h1 em{font-style:normal;color:var(--gold)}
-.cover p.subtitle{font-family:var(--f-label);font-weight:600;font-size:clamp(18px,2.6vw,26px);color:var(--ink);max-width:30ch;line-height:1.25}
-.cover p{max-width:58ch;margin:0;color:var(--muted);font-size:19px}
-.cover-ledger{display:flex;flex-wrap:wrap;gap:10px 28px;font-family:var(--f-mono);font-size:14px;color:var(--muted)}
-.cover-ledger b{color:var(--ink);font-weight:600}
+/* Couverture : lever de soleil sur la montagne, comme l'icône de l'appli. Bandeau volontairement sombre dans les deux thèmes. */
+.cover{--night:#052926;--night2:#0b463f;--cream:#f7efd6;--sun1:#fff4b8;--sun2:#ffc53d;--sun3:#ff7a35;
+  grid-column:1/-1;margin-top:16px;border-radius:26px;container-type:inline-size;padding:40px clamp(20px,4vw,52px) 64px;display:grid;gap:18px;
+  position:relative;overflow:hidden;isolation:isolate;color:var(--cream);
+  background:radial-gradient(circle at 97% 4%,#fff6d2 0,#ffe39a 3%,rgba(255,170,90,.6) 4.6%,rgba(255,112,80,.22) 15%,rgba(255,112,80,0) 38%),linear-gradient(172deg,var(--night) 0%,var(--night2) 100%)}
+.cover .ridge{position:absolute;left:0;right:0;bottom:0;width:100%;height:30%;z-index:-1}
+.cover .kicker{justify-self:start;font:600 13px/1.3 var(--f-mono);letter-spacing:.05em;color:var(--sun2);border:1px solid rgba(255,197,61,.45);border-radius:999px;padding:7px 14px}
+.cover h1{font-family:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;text-transform:uppercase;line-height:.86;display:grid;justify-items:start}
+.cover h1 .t1{font-weight:800;font-size:min(46px,6.8cqi);letter-spacing:.07em;color:var(--cream)}
+.cover h1 .t2{font-weight:900;font-size:min(164px,21cqi);letter-spacing:.005em;background:linear-gradient(180deg,var(--sun1) 6%,var(--sun2) 50%,var(--sun3) 98%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.02em}
+.cover h1 .arrow{display:block;width:min(100%,500px);height:auto;margin-top:2px}
+.cover p.subtitle{font-family:var(--f-label);font-weight:600;font-size:clamp(18px,2.6vw,26px);color:var(--cream);max-width:30ch;line-height:1.25}
+.cover p{max-width:58ch;margin:0;color:rgba(247,239,214,.8);font-size:19px}
+.cover-ledger{display:flex;flex-wrap:wrap;gap:10px 28px;font-family:var(--f-mono);font-size:14px;color:rgba(247,239,214,.7)}
+.cover-ledger b{color:var(--sun2);font-weight:600}
 
 /* Sommaire */
 .toc{position:relative;padding-block:24px 8px}
@@ -177,8 +183,9 @@ td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:now
 
 <div class="shell">
   <header class="cover">
+    <svg class="ridge" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150 L140 70 L230 120 L360 30 L470 110 L560 80 L690 140 L820 60 L930 120 L1050 50 L1200 110 L1200 220 L0 220Z" fill="#0d5249" opacity=".55"/><path d="M0 190 L160 130 L300 170 L450 110 L600 165 L760 120 L900 175 L1060 125 L1200 160 L1200 220 L0 220Z" fill="#0f6052" opacity=".7"/></svg>
     <span class="kicker">Un roman d’apprentissage financier · édition <span data-p="year" data-f="num">2026</span></span>
-    <h1>Ma gestion du <em>cashflow</em></h1>
+    <h1><span class="t1">Ma gestion du</span><span class="t2">Cashflow</span><svg class="arrow" viewBox="0 0 520 64" aria-hidden="true"><defs><linearGradient id="cv-ar" x1="0" x2="1"><stop offset="0" stop-color="#ffc53d" stop-opacity=".2"/><stop offset="1" stop-color="#ffc53d"/></linearGradient></defs><path d="M4 58 C150 56 300 44 468 14.5" fill="none" stroke="url(#cv-ar)" stroke-width="7" stroke-linecap="round"/><path d="M501 8.6 L466.5 29.5 L461.5 1.5Z" fill="#ffc53d"/></svg></h1>
     <p class="subtitle">Sortir de la Rat Race et atteindre l’indépendance financière</p>
     <p>L’histoire de Léo, 34 ans, qui découvre pourquoi il court sans avancer, et comment il construit, chiffre après chiffre, des revenus qui travaillent pour lui. Les principes de « Père riche, père pauvre » de Robert Kiyosaki, appliqués à la France d’aujourd’hui : statuts, impôts, immobilier, placements.</p>
     <div class="cover-ledger"><span>11 chapitres</span><span>9 quiz</span><span>2 calculateurs</span><span>Lecture ≈ <b>1 h 30</b></span></div>

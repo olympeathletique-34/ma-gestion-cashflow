@@ -41,16 +41,26 @@ h3{font-family:var(--f-label);font-weight:700;font-size:21px;letter-spacing:.01e
 .btn small{font:600 15px var(--f-mono);opacity:.85}
 .btn.dark{background:var(--ink);color:var(--paper);box-shadow:none}
 
-/* Couverture */
-.hero{padding-block:48px 72px;border-bottom:2px solid var(--ink)}
+/* Couverture : lever de soleil sur la montagne, comme l'icône. Bandeau volontairement sombre dans les deux thèmes. */
+.sunrise{--night:#052926;--night2:#0b463f;--cream:#f7efd6;--sun1:#fff4b8;--sun2:#ffc53d;--sun3:#ff7a35;
+  position:relative;overflow:hidden;isolation:isolate;color:var(--cream);
+  background:radial-gradient(circle at 97% 4%,#fff6d2 0,#ffe39a 3%,rgba(255,170,90,.6) 4.6%,rgba(255,112,80,.22) 15%,rgba(255,112,80,0) 38%),linear-gradient(172deg,var(--night) 0%,var(--night2) 100%)}
+.sunrise .ridge{position:absolute;left:0;right:0;bottom:0;width:100%;height:34%;z-index:-1}
+.tt{font-family:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;text-transform:uppercase;line-height:.86;margin:0;display:grid;justify-items:start}
+.tt .t1{font-weight:800;font-size:clamp(26px,4.2vw,48px);letter-spacing:.07em;color:var(--cream)}
+.tt .t2{font-weight:900;font-size:clamp(78px,14.5vw,172px);letter-spacing:.005em;background:linear-gradient(180deg,var(--sun1) 6%,var(--sun2) 50%,var(--sun3) 98%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.02em}
+.tt .arrow{display:block;width:min(100%,520px);height:auto;margin-top:2px}
+.chip{justify-self:start;font:600 13px/1 var(--f-mono);letter-spacing:.06em;color:var(--sun2);border:1px solid rgba(255,197,61,.45);border-radius:999px;padding:8px 14px}
+.hero{padding-block:52px 84px}
 .hero .in{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
-.hero h1{font-family:var(--f-display);font-weight:400;font-size:clamp(52px,9vw,104px);line-height:.93;letter-spacing:-.01em}
-.hero h1 em{font-style:normal;color:var(--gold)}
-.hero .sub{font-family:var(--f-label);font-weight:600;font-size:clamp(20px,2.6vw,26px);line-height:1.25;max-width:30ch}
-.hero .promise{color:var(--muted);max-width:44ch;font-size:20px}
-.hero .copy{display:grid;gap:20px;min-width:0}
+.hero .sub{font-family:var(--f-label);font-weight:600;font-size:clamp(20px,2.6vw,26px);line-height:1.25;max-width:30ch;color:var(--cream)}
+.hero .promise{color:rgba(247,239,214,.78);max-width:44ch;font-size:20px}
+.hero .copy{display:grid;gap:20px;min-width:0;container-type:inline-size}
+.hero .tt .t2{font-size:min(172px,23cqi)}
+.hero .tt .t1{font-size:min(48px,7.4cqi)}
 .hero .cta{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center}
-.hero .cta span{font-family:var(--f-label);font-size:15px;color:var(--muted)}
+.hero .cta span{font-family:var(--f-label);font-size:15px;color:rgba(247,239,214,.72)}
+.hero .btn{background:linear-gradient(180deg,#ffd257,#ff9a3c);color:#2a1606;box-shadow:0 10px 28px rgba(255,140,50,.35)}
 .phones{position:relative;min-height:640px}
 .phone{position:absolute;width:62%;border-radius:30px;border:8px solid #14251f;background:#14251f;box-shadow:0 26px 60px rgba(14,43,38,.28);overflow:hidden}
 .phone img{display:block;width:100%;height:auto}
@@ -131,11 +141,13 @@ footer .in{display:flex;flex-wrap:wrap;gap:8px 24px;font-family:var(--f-label);f
 }
 </style>
 
-<header class="hero">
+<header class="hero sunrise">
+  <svg class="ridge" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150 L140 70 L230 120 L360 30 L470 110 L560 80 L690 140 L820 60 L930 120 L1050 50 L1200 110 L1200 220 L0 220Z" fill="#0d5249" opacity=".55"/><path d="M0 190 L160 130 L300 170 L450 110 L600 165 L760 120 L900 175 L1060 125 L1200 160 L1200 220 L0 220Z" fill="#0f6052" opacity=".7"/></svg>
   <div class="in">
     <div class="copy">
-      <span class="kicker">Le livre + l’appli · édition 2026</span>
-      <h1>Ma gestion du <em>cashflow</em></h1>
+      <span class="chip">LIVRE + APPLI · 2026</span>
+      <h1 class="tt"><span class="t1">Ma gestion du</span><span class="t2">Cashflow</span>
+        <svg class="arrow" viewBox="0 0 520 64" aria-hidden="true"><defs><linearGradient id="ar" x1="0" x2="1"><stop offset="0" stop-color="#ffc53d" stop-opacity=".2"/><stop offset="1" stop-color="#ffc53d"/></linearGradient></defs><path d="M4 58 C150 56 300 44 468 14.5" fill="none" stroke="url(#ar)" stroke-width="7" stroke-linecap="round"/><path d="M501 8.6 L466.5 29.5 L461.5 1.5Z" fill="#ffc53d"/></svg></h1>
       <p class="sub">Sortir de la Rat Race et atteindre l’indépendance financière</p>
       <p class="promise">Comprends où va ton argent, construis des revenus qui travaillent pour toi, et vois chaque mois combien il te manque pour ne plus dépendre de ton travail.</p>
       <div class="cta"><a class="btn" href="#prix" data-order>Je veux le pack <small>39 €</small></a><span>Paiement unique · mises à jour incluses</span></div>
