@@ -52,6 +52,11 @@ nav.tabs::-webkit-scrollbar{display:none}
 nav.tabs a{font-family:var(--f-label);font-weight:600;font-size:14px;text-decoration:none;color:var(--muted);padding:7px 13px;white-space:nowrap;border-radius:999px}
 nav.tabs a:hover{color:var(--ink);background:var(--soft)}
 nav.tabs a[aria-current="page"]{color:var(--hero-ink);background:var(--hero)}
+nav.subtabs{display:flex;gap:6px;overflow-x:auto;margin:6px 0 2px;padding:2px;scrollbar-width:none}nav.subtabs::-webkit-scrollbar{display:none}
+nav.subtabs a{font-family:var(--f-label);font-weight:600;font-size:13px;text-decoration:none;color:var(--muted);padding:6px 12px;white-space:nowrap;border-radius:999px;border:1.5px solid var(--line,rgba(0,0,0,.12))}
+nav.subtabs a:hover{color:var(--ink)}nav.subtabs a[aria-current="page"]{color:var(--ink);border-color:var(--ink);background:var(--card)}
+.kvbtn{width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;cursor:pointer;border-radius:8px}.kvbtn:hover{background:var(--soft)}
+.backlink{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-label);font-weight:600;font-size:14px;text-decoration:none;color:var(--muted);margin:10px 2px 0}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
 .toolbar .sp{flex:1}
 .status-line{font-size:12.5px;color:var(--muted)}
@@ -616,6 +621,7 @@ a.qpill:hover{background:color-mix(in srgb,var(--exp) 10%,var(--soft))}
     <button class="btn sm" data-act="toggle-blur" id="h-blur"></button>
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <nav class="subtabs" id="subtabs" aria-label="Sous-sections" hidden></nav>
   <div id="view"><p class="empty">Chargement de ta feuille…</p></div>
 </div>
 <div class="actionbar"><div class="in">
@@ -1010,7 +1016,11 @@ function periodPicker(tab){
 }
 
 /* ==================== Rendu général ==================== */
-const ROUTES=[['feuille','Feuille Rat Race'],['bilan','Bilan complet'],['fasttrack','Fast Track'],['historique','Historique'],['comptes','Mes comptes'],['biens','Immobilier'],['portefeuille','Placements'],['previsions','Prévisions'],['contrats','Contrats'],['urssaf','URSSAF'],['impots','Impôts & déclaration'],['memos','Mémos'],['reglages','Réglages']];
+const ROUTES=[['feuille','Feuille Rat Race'],['bilan','Bilan complet'],['fasttrack','Fast Track'],['historique','Opérations'],['comptes','Comptes'],['biens','Immobilier'],['portefeuille','Placements'],['entreprises','Entreprises'],['sources','Autres revenus passifs'],['previsions','Prévisions'],['contrats','Contrats'],['urssaf','URSSAF'],['impots','Impôts & déclaration'],['memos','Mémos'],['reglages','Réglages']];
+/* Navigation en espaces : un onglet principal par espace, des sous-onglets quand l'espace en contient plusieurs. Le Bilan complet s'ouvre depuis la feuille. */
+const GROUPS=[{k:'feuille',l:'Feuille Rat Race',r:['feuille','bilan'],nosub:true},{k:'fasttrack',l:'Fast Track',r:['fasttrack']},{k:'quotidien',l:'Au quotidien',r:['comptes','historique','previsions']},{k:'contrats',l:'Contrats',r:['contrats']},{k:'patrimoine',l:'Patrimoine',r:['biens','portefeuille','entreprises','sources']},{k:'fiscal',l:'Impôts & URSSAF',r:['urssaf','impots']},{k:'outils',l:'Outils',r:['memos','reglages']}];
+const groupOf=r=>GROUPS.find(g=>g.r.includes(r))||GROUPS[0];
+const routeLabel=k=>(ROUTES.find(r=>r[0]===k)||[k,k])[1];
 function route(){let h=(location.hash||'').slice(1);if(h==='fiscal'||h==='declaration'){S.impTab=h==='fiscal'?'fiscal':'decl';h='impots';try{history.replaceState(null,'','#impots')}catch(e){}}return ROUTES.some(r=>r[0]===h)?h:'feuille'}
 function render(){
   S.route=route();
@@ -1018,9 +1028,12 @@ function render(){
   const hp=$('#h-player'),hf=$('#h-prof');hp.textContent=S.cfg.player.name||'Ton nom';hp.classList.toggle('ph',!S.cfg.player.name);hf.textContent=S.cfg.player.profession||'Ta profession';hf.classList.toggle('ph',!S.cfg.player.profession);
   const hs=$('#h-status');hs.className='sdot '+(S.mode==='db'?'ok':S.mode==='local'?'warn':'');hs.title=S.mode==='db'?(DIST?'Enregistré sur cet appareil':'Enregistré dans ta base privée'):S.mode==='local'?'Mode local : rien n’est enregistré':'Connexion…';hs.setAttribute('aria-label',hs.title);
   const hb=$('#h-blur');hb.textContent=S.blur?'Afficher':'Masquer';hb.setAttribute('aria-pressed',String(!!S.blur));hb.title=S.blur?'Afficher les montants':'Masquer les montants';
-  $('#tabs').innerHTML=ROUTES.map(([k,l])=>`<a href="#${k}" ${S.route===k?'aria-current="page"':''}>${l}</a>`).join('');
+  const grp=groupOf(S.route);S.lastSub=S.lastSub||{};if(!grp.nosub)S.lastSub[grp.k]=S.route;
+  $('#tabs').innerHTML=GROUPS.map(g=>`<a href="#${g.nosub?g.r[0]:(S.lastSub[g.k]||g.r[0])}" ${g===grp?'aria-current="page"':''}>${g.l}</a>`).join('');
+  {const nv=$('#tabs'),ac=nv.querySelector('[aria-current]');if(ac)nv.scrollLeft=Math.max(0,ac.offsetLeft-(nv.clientWidth-ac.offsetWidth)/2)}
+  const sub=$('#subtabs');sub.hidden=grp.nosub||grp.r.length<2;sub.innerHTML=sub.hidden?'':grp.r.map(k=>`<a href="#${k}" ${S.route===k?'aria-current="page"':''}>${routeLabel(k)}</a>`).join('');
   const v=$('#view');
-  const views={feuille:vFeuille,bilan:vBilan,fasttrack:vGuide,historique:vHist,comptes:vComptes,biens:vBiens,portefeuille:vPortfolio,previsions:vPrev,contrats:vContrats,urssaf:vUrssaf,impots:vImpots,memos:vMemos,reglages:vReglages};
+  const views={feuille:vFeuille,bilan:vBilan,sources:vSources,entreprises:vEntreprises,fasttrack:vGuide,historique:vHist,comptes:vComptes,biens:vBiens,portefeuille:vPortfolio,previsions:vPrev,contrats:vContrats,urssaf:vUrssaf,impots:vImpots,memos:vMemos,reglages:vReglages};
   try{v.innerHTML=statusLine()+views[S.route]()}catch(e){console.error(e);v.innerHTML='<p class="err">Erreur d’affichage : '+esc(e.message)+'</p>'}
   if(S.modalRefresh)S.modalRefresh();
 }
@@ -1043,7 +1056,7 @@ function vFeuille(){
   const r=periodRange(),st=C.period(r.from,r.to),rr=C.rr(r);S.nwDate=r.to<todayISO()?r.to:null;const nw=C.netWorth(S.nwDate);
   const pend=C.pending(todayISO());
   const cov=rr.coverage==null?0:Math.max(0,Math.min(1.3,rr.coverage));const scale=130;
-  let h=periodBar();
+  let h=periodBar()+`<p style="display:flex;justify-content:flex-end;margin:8px 2px 0"><a class="btn sm" href="#bilan">Bilan complet →</a></p>`;
   if(pend.length)h+=`<div class="notice"><b>${pend.length} opération${pend.length>1?'s':''} récurrente${pend.length>1?'s':''} à confirmer.</b> Elles ne comptent pas tant que tu ne les as pas validées. <a class="linkbtn" href="#previsions">Ouvrir les prévisions</a></div>`;
   h+=`<section class="hero-card" aria-label="Sortie de la Rat Race">
     <div class="hero-top"><span class="eyebrow" title="Objectif : revenus passifs nets au-dessus des dépenses totales">Revenus passifs à générer · objectif ${rr.target} %</span>
@@ -1562,7 +1575,7 @@ function vBilan(){
   const plS=(pl,c)=>pl==null?'':` <small class="${pl>=0?'pos':'neg'}">${pl>=0?'+':''}${money(pl)} · ${pfPct(pl,c)}</small>`;
   const asec=(g)=>`<div class="rg"><span>${esc(g.label)}</span><b class="num money">${money(g.v)}${g.pl!=null?plS(g.pl,g.c):''}</b></div>${g.items.map(x=>`<div class="rr ri"><span>${esc(x.label)}</span><b class="num money">${money(x.v)}${x.pl!=null?plS(x.pl,x.c):''}</b></div>`).join('')}`;
   const cov=t.cov==null?0:Math.max(0,Math.min(1.3,t.cov));
-  let h=periodBar()+`<div class="toolbar" style="margin-top:0"><span class="small muted">Montants ${pm}. Patrimoine ${B.D?'au '+fdate(B.D):'à aujourd’hui'}.</span><span class="sp"></span><button class="btn sm" data-act="rapport">📄 Point financier complet</button><button class="btn sm solid" data-act="bilan-pdf">⤓ Exporter en PDF</button></div>
+  let h=`<a class="backlink" href="#feuille">← Feuille Rat Race</a>`+periodBar()+`<div class="toolbar" style="margin-top:0"><span class="small muted">Montants ${pm}. Patrimoine ${B.D?'au '+fdate(B.D):'à aujourd’hui'}.</span><span class="sp"></span><button class="btn sm" data-act="rapport">📄 Point financier complet</button><button class="btn sm solid" data-act="bilan-pdf">⤓ Exporter en PDF</button></div>
   <div class="rdsheet" id="rdsheet">
     <div class="rdhead"><div><span class="eyebrow">Bilan financier</span><h2>${esc(S.cfg.player.name||'Joueur')}${S.cfg.player.profession?' · '+esc(S.cfg.player.profession):''}</h2></div><div class="rdper"><b>${esc(r.label)}</b><small>${B.nm>1?'total de la période':'mensuel'} · édité le ${fdate(todayISO())}</small></div></div>
     <div class="band">Compte de résultat <span class="r">Income statement</span></div>
@@ -1874,7 +1887,7 @@ function vPortfolio(){
     <div class="hstats"><div class="hstat"><div class="k">Investi</div><div class="v num money">${money(tot.c)}</div><small>prix d’achat + frais</small></div>
       <div class="hstat"><div class="k">Plus-value latente</div><div class="v num money">${moneyS(pl)}</div><small>${tot.c?(pl>=0?'+':'')+(pl/tot.c*100).toFixed(1).replace('.',',')+' %':''}</small></div>
       <div class="hstat"><div class="k">Lignes</div><div class="v num">${ps.length}</div><small>${ps.filter(p=>p.kind==='crypto').length} crypto</small></div></div></section>
-  <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
+  <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?`<button class="btn sm solid" data-act="pf-bulk">↻ Mettre à jour les cours</button>`:''}${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
   ${S.pfPending?'<p class="small muted" style="margin:0 2px 8px">Claude récupère les cours sur le web ; ils s’afficheront ici automatiquement, en général en 2 à 5 minutes.</p>':''}`;
   if(!ps.length)return h+`<div class="panel"><p class="empty">Ajoute ta première ligne : ISIN (ex. FR0000120271) ou code crypto (ex. BTC), date d’achat, quantité et prix unitaire payé.</p></div>`;
   h+=`<div class="panel"><h3>Sous-totaux par type</h3>${pfSummaryTable()}<p class="small muted" style="margin:6px 0 0">Investi = prix d’achat + frais. Gain ou perte latents, au dernier cours relevé.</p></div>`;
@@ -1938,7 +1951,18 @@ function pfPriceForm(id){const p=pfCfg().positions.find(x=>x.id===id);
   cfgForm('Cours · '+(p.name||pfKey(p)),[{k:'price',l:'Cours unitaire (€)'},{k:'date',l:'Date du cours',t:'date'}],{date:todayISO()},(o)=>{const x=Number(String(o.price||'').replace(/\s/g,'').replace(',','.'));if(!(x>0)){$('#cf-err').textContent='Indique un cours positif.';return false}
     const k=pfKey(p);S.prices.history=S.prices.history||{};const h=(S.prices.history[k]||[]).filter(e=>e[0]!==o.date);h.push([o.date||todayISO(),x]);h.sort((a,b)=>a[0].localeCompare(b[0]));S.prices.history[k]=h;S.prices.src=S.prices.src||{};S.prices.src[k]='saisie manuelle';
     savePrices();render();toast('Cours enregistré');setTimeout(()=>pfDetail(id),50)});}
-function pfHelp(){if(DIST){openModal('Mise à jour des cours','<div class="stack small"><p style="margin:0">Tes données restent sur cet appareil : l’appli ne se connecte à aucun site de Bourse ou de crypto.</p><p style="margin:0">Pour mettre un cours à jour, ouvre une ligne puis « Saisir un cours ». Une fois par mois, au moment de ton PAYDAY, suffit largement.</p><p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>','');return}openModal('Mise à jour des cours',`<div class="stack small">
+/* Version installée : tous les cours sur un seul écran, saisis à la main (l'appli ne se connecte à aucun site de Bourse ou de crypto). */
+function pfBulk(){const ps=pfCfg().positions.filter(p=>PFL.qty(p)>1e-9);if(!ps.length){toast('Ajoute d’abord une action, un ETF ou une crypto.');return}
+  const nf=x=>x==null?'':String(Math.round(x*10000)/10000).replace('.',',');
+  cfgForm('Mettre à jour les cours',[{k:'date',l:'Date des cours',t:'date'},{k:'_h',t:'html',html:'<p class="small muted" style="margin:0">Indique le cours unitaire en euros de chaque ligne. Laisse vide pour garder le dernier cours.</p>'},
+    ...ps.map(p=>{const q=PFL.quote(p);return {k:'p_'+p.id,l:esc(p.name||pfKey(p))+` <small>${esc(pfKey(p))}${q?' · dernier cours '+nf(q.p)+' € le '+fdate(q.d):''}</small>`,ph:'cours en €',t:'text'}})],
+    {date:todayISO()},(o)=>{const d=o.date||todayISO();let n=0;S.prices.history=S.prices.history||{};S.prices.src=S.prices.src||{};
+      for(const p of ps){const raw=(o['p_'+p.id]||'').trim();if(!raw)continue;const x=Number(raw.replace(/\s/g,'').replace(',','.'));if(!(x>0)){$('#cf-err').textContent=`Cours invalide pour ${p.name||pfKey(p)}.`;return false}
+        const k=pfKey(p);const h=(S.prices.history[k]||[]).filter(e=>e[0]!==d);h.push([d,x]);h.sort((a,b)=>a[0].localeCompare(b[0]));S.prices.history[k]=h;S.prices.src[k]='saisie manuelle';n++}
+      if(!n){$('#cf-err').textContent='Indique au moins un cours.';return false}
+      S.prices.updatedAt=new Date().toISOString();savePrices();render();toast(n+' cours mis à jour')},{wide:true});
+  document.querySelectorAll('[id^="cf-p_"]').forEach(e=>{e.inputMode='decimal'});const el=document.querySelector('[id^="cf-p_"]');if(el)el.focus()}
+function pfHelp(){if(DIST){openModal('Mise à jour des cours','<div class="stack small"><p style="margin:0">Tes données restent sur cet appareil : l’appli ne se connecte à aucun site de Bourse ou de crypto.</p><p style="margin:0">Pour mettre tes cours à jour, touche « Mettre à jour les cours » : toutes tes lignes s’affichent sur un seul écran. Tu peux aussi ouvrir une ligne puis « Saisir un cours ». Une fois par mois, au moment de ton PAYDAY, suffit largement.</p><p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>','');return}openModal('Mise à jour des cours',`<div class="stack small">
   <p style="margin:0">Pour la sécurité de tes données, cette page ne peut pas se connecter aux sites de Bourse ou de crypto. Trois façons de tenir les cours à jour :</p>
   <p style="margin:0"><b>Bouton « Mettre à jour les cours »</b> : il lance une tâche Claude qui cherche les cours de chaque ligne sur le web et les inscrit ici, en quelques minutes. La première fois, Claude te demande l’autorisation d’utiliser le connecteur « Claude Code Remote ».</p>
   <p style="margin:0"><b>1. Demande à Claude</b> dans votre conversation : « mets à jour les cours de mon portefeuille ». Claude cherche les cours de chaque ISIN et code crypto et les inscrit ici, avec la date et la source.</p>
@@ -1976,7 +2000,7 @@ function vBiens(){
     const hasRent=linked.some(o=>o.kind==='inc');
     h+=`<div class="card"><div class="ch"><h3>${esc(p.name)}</h3><span class="small">${p.rental===false?'non loué':'loué'}</span></div><div class="cb">
       <p class="small muted" style="margin:0 0 6px">${p.detention==='indivision'?'Indivision':'Pleine propriété'} · quote-part ${p.quote==null?'<span class="warn">à compléter</span>':p.quote+' %'}${p.usage?' · '+esc(p.usage):''}</p>
-      ${(p.lines||[]).map(l=>`<div class="kv"><span class="k">${esc(l.label)}${l.verify?' <span class="badge warn">à vérifier</span>':''}<small>${l.amount==null?'montant à compléter':money(l.amount)+(Number(l.per)===1?' / mois':Number(l.per)===3?' / trimestre':Number(l.per)===12?' / an':' / '+l.per+' mois')}</small></span><span class="v num money ${l.dir==='in'?'pos':'neg'}">${l.amount==null?'—':(l.dir==='in'?'+':'−')+money(Math.round(l.amount/(Number(l.per)||1)))}</span></div>`).join('')}
+      ${LINES.rowsHTML('prop',p)}
       <div class="kv strong"><span class="k">Cashflow mensuel estimé<small>${p.detention==='indivision'&&p.mode==='detail'?'× ta quote-part':'ta part'}</small></span><span class="v num money ${est!=null&&est<0?'neg':'pos'}">${est==null?'—':moneyS(est)}</span></div>
       <div class="kv"><span class="k">Cashflow réel moyen<small>${nM?`opérations passées liées au bien, moyenne sur ${nM} mois`:'aucune opération liée au bien'}</small></span><span class="v num money">${nM?moneyS(Math.round(realSum/nM)):'—'}</span></div>
       ${nM&&!hasRent&&p.rental!==false?`<p class="small warn" style="margin:6px 0 0">Aucun loyer enregistré pour ce bien : seules les charges sont comptées. Saisis tes loyers en recette « Revenus locatifs » liée à ce bien.</p>`:''}
@@ -1993,12 +2017,47 @@ function vBiens(){
       ${p.toConfirm?'<p class="small warn" style="margin:8px 0 0">Montants initiaux à confirmer.</p>':''}
       ${(p.events||[]).length?`<div class="grp">Historique (loyers, locataires, travaux)</div>${p.events.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="kv"><span class="k">${esc(e.text)}</span><span class="v small">${fdate(e.date)}</span></div>`).join('')}`:''}
       ${p.notes?`<p class="small" style="margin:8px 0 0">${esc(p.notes)}</p>`:''}
-      <div class="btns"><button class="btn sm" data-act="edit-prop" data-id="${p.id}">Modifier</button><button class="btn sm" data-act="prop-loan" data-id="${p.id}">${LOAN.ok(p.loan)?'Prêt':'+ Prêt'}</button><button class="btn sm" data-act="prop-event" data-id="${p.id}">+ Événement</button><button class="btn sm ghost" data-act="prop-ops" data-id="${p.id}">Opérations liées</button><button class="btn sm ghost" data-act="prop-log" data-id="${p.id}">Modifications</button></div></div></div>`}
+      <div class="btns"><button class="btn sm" data-act="line-new" data-k="prop" data-o="${p.id}">+ Ligne</button><button class="btn sm" data-act="edit-prop" data-id="${p.id}">Modifier</button><button class="btn sm" data-act="prop-loan" data-id="${p.id}">${LOAN.ok(p.loan)?'Prêt':'+ Prêt'}</button><button class="btn sm" data-act="prop-event" data-id="${p.id}">+ Événement</button><button class="btn sm ghost" data-act="prop-ops" data-id="${p.id}">Opérations liées</button><button class="btn sm ghost" data-act="prop-log" data-id="${p.id}">Modifications</button></div></div></div>`}
   h+='</div>';
-  h+=`<div class="panel"><h3>Autres sources de revenus passifs (estimations)</h3><p class="small muted">Dividendes, intérêts, produits numériques automatisés… Indique un montant mensuel net estimé. Utilisé quand la source des revenus passifs est « Estimation » dans Réglages.</p>
+  return h;
+}
+
+function vSources(){
+  let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Autres revenus passifs</h2></div>`;
+  h+=`<div class="panel"><h3>Sources estimées</h3><p class="small muted">Dividendes, intérêts, produits numériques automatisés… Indique un montant mensuel net estimé. Utilisé quand la source des revenus passifs est « Estimation » dans Réglages.</p>
     ${S.cfg.passiveSources.map(x=>`<button class="row" data-act="edit-src" data-id="${x.id}"><span class="lbl">${esc(x.name)}<small>${x.nature==='semi'?'Semi-passif':'Passif'}${x.note?' · '+esc(x.note):''}</small></span><span class="amt num money">${money(x.monthly)}</span><span class="chev">›</span></button>`).join('')||'<p class="empty">Aucune autre source pour l’instant.</p>'}
     <p style="margin:10px 0 0"><button class="btn sm" data-act="edit-src">+ Ajouter une source</button></p></div>`;
   return h;
+}
+
+/* ==================== Vue : Entreprises ==================== */
+const COPLAF={me_bnc:'bnc',me_cipav:'cipav',me_bics:'bics',me_bicv:'vente'};
+function coStats(co,y){const from=y+'-01-01',to=y+'-12-31',m0=mk(todayISO());const inc=new Set(co.incCats||[]);
+  const isInc=o=>o.kind==='inc'&&(inc.has(o.catId)||(C.root(o.catId)&&inc.has(C.root(o.catId).id)));
+  const r={ca:0,urs:0,chg:0,caM:0,ursM:0,chgM:0};
+  for(const o of C.range(from,to)){if(!C.isReal(o))continue;const m=o.date.slice(0,7)===m0;
+    if(isInc(o)){const rt=o.retenues||{},t=C.taxOf(o.catId)||{};const u=(rt.urssaf||0)+(rt.cotis||0)+(t.vl?(rt.ir||0):0),b=C.brut(o);r.ca+=b;r.urs+=u;if(m){r.caM+=b;r.ursM+=u}}
+    else if(o.kind==='exp'&&C.companyOf(o)===co.id&&!URS.src(o)){r.chg+=o.amount;if(m)r.chgM+=o.amount}}
+  return r}
+function vEntreprises(){const L=S.cfg.companies||[];const cy=Number(todayISO().slice(0,4));const y=S.coY||cy;
+  let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Entreprises</h2><span class="sp"></span><button class="btn" data-act="co-edit">+ Ajouter une entreprise</button></div>
+  <p class="small muted">Recettes encaissées, cotisations URSSAF calculées sur chaque recette, charges rattachées à l’entreprise (catégories, contrats et opérations) et résultat. Les lignes servent à prévoir les charges et recettes courantes ; coche « contrat » pour un prélèvement régulier.</p>`;
+  if(!L.length)return h+'<p class="empty">Aucune entreprise. Ajoute la tienne pour suivre son chiffre d’affaires, ses cotisations et ses charges.</p>';
+  h+=`<div class="toolbar" style="margin-top:0"><span class="small muted">Année</span><div class="miniseg" role="group" aria-label="Année">${[cy-1,cy].map(v=>`<button style="width:auto;padding:0 12px;border-radius:999px" class="${v===y?'on':''}" data-act="co-y" data-v="${v}" aria-pressed="${v===y}">${v}</button>`).join('')}</div></div><div class="cards">`;
+  const nx=URS.periods().filter(p=>URS.rest(p)>0).sort((a,b)=>URS.due(a.k).localeCompare(URS.due(b.k)))[0];
+  for(const co of L){const st=coStats(co,y),res=st.ca-st.urs-st.chg;const pk=COPLAF[co.regime],pl=pk&&FP.micro[pk]?FP.micro[pk].plafond*100:null;
+    const lc=S.cfg.contracts.filter(c=>c.companyId===co.id&&!c.lineRef&&CT.active(c));
+    h+=`<div class="card"><div class="ch"><h3>${esc(co.name)}</h3><span class="small">${esc(COREG[co.regime]||co.regime||'')}</span></div><div class="cb">
+      <div class="bizkpi"><div><span>Chiffre d’affaires ${y}</span><b class="num money">${money(st.ca)}</b></div><div><span>URSSAF</span><b class="num money calm">${st.urs?'−':''}${money(st.urs)}</b></div><div><span>Charges</span><b class="num money">${st.chg?'−':''}${money(st.chg)}</b></div><div class="hl"><span>Résultat</span><b class="num money ${res>=0?'pos':'neg'}">${money(res)}</b></div></div>
+      ${y===cy?`<div class="kv"><span class="k">Ce mois-ci<small>CA ${money(st.caM)} · URSSAF ${money(st.ursM)} · charges ${money(st.chgM)}</small></span><span class="v num money ${st.caM-st.ursM-st.chgM>=0?'pos':'neg'}">${moneyS(st.caM-st.ursM-st.chgM)}</span></div>`:''}
+      ${pl?`<div class="kv"><span class="k">Plafond micro-entreprise<small>${money(st.ca)} sur ${money(pl)}</small></span><span class="v num">${Math.round(st.ca/pl*100)} %</span></div><div class="gauge" style="margin:4px 0 8px;height:8px"><div class="fill" style="width:${Math.min(100,Math.round(st.ca/pl*100))}%"></div></div>`:''}
+      ${pk&&nx&&y===cy?`<div class="kv"><span class="k">Prochaine échéance URSSAF<small>${esc(URS.keyLabel(nx.k))} · avant le ${fdate(URS.due(nx.k))}</small></span><span class="v num money">${money(URS.rest(nx))}</span></div>`:''}
+      <div class="grp">Lignes de recettes et charges</div>
+      ${(co.lines||[]).length?LINES.rowsHTML('co',co):'<p class="small muted" style="margin:0">Aucune ligne. Ajoute tes charges courantes : comptable, logiciels, assurance pro, banque…</p>'}
+      ${lc.length?`<div class="grp">Autres contrats de l’entreprise</div>${lc.map(c=>`<button class="kv kvbtn" data-act="edit-contract" data-id="${c.id}"><span class="k">${esc(c.name)}<small>${esc(c.org||'')} · ${(PERLBL[CT.per(c)]||'').toLowerCase()}</small></span><span class="v num money neg">−${money(CT.monthly(c))}</span></button>`).join('')}`:''}
+      <div class="btns"><button class="btn sm" data-act="line-new" data-k="co" data-o="${co.id}">+ Ligne</button><button class="btn sm" data-act="co-edit" data-id="${co.id}">Modifier</button><a class="btn sm ghost" href="#urssaf">URSSAF</a></div>
+    </div></div>`}
+  return h+'</div>';
 }
 
 /* ==================== Vue : Prévisions ==================== */
@@ -2037,7 +2096,7 @@ const CT={
   opId(c,d){return 'op-'+c.id+'-'+d},
   occurrences(c,untilISO){const p=CT.debitPer(c);if(!CT.active(c)||!c.nextDate||!p||CT.debitAmount(c)==null||!c.catId)return [];const skip=(c.skipMonths||[]).map(Number);const out=[];let i=0,d=c.nextDate;while(d<=untilISO&&i<400){if(c.endDate&&d>c.endDate)break;if(!skip.includes(Number(d.slice(5,7))))out.push(d);i++;d=addMonthsISO(c.nextDate,p*i)}return out},
   isDone(c,d){return !!((c.done||{})[d])||!!findOp(CT.opId(c,d))},
-  makeOp(c,d){return {id:CT.opId(c,d),kind:'exp',amount:CT.debitAmount(c),date:d,catId:c.catId,accountId:c.accountId||'',desc:c.name,comment:'',status:'paye',recur:'recurrent',propertyId:c.propertyId||'',contractId:c.id,amountType:'net',retMode:'a_payer',retenues:{},createdAt:new Date().toISOString()}},
+  makeOp(c,d){return {id:CT.opId(c,d),kind:'exp',amount:CT.debitAmount(c),date:d,catId:c.catId,accountId:c.accountId||'',desc:c.name,comment:'',status:'paye',recur:'recurrent',propertyId:c.propertyId||'',...(c.companyId?{companyId:c.companyId}:{}),contractId:c.id,amountType:'net',retMode:'a_payer',retenues:{},createdAt:new Date().toISOString()}},
   totals(){const by={};let m=0,todo=0;for(const c of S.cfg.contracts){if(!CT.active(c))continue;const v=CT.monthly(c);if(v==null){todo++;continue}m+=v;const r=C.root(c.catId);const k=r?r.id:'_none';by[k]=(by[k]||0)+v}return {month:m,year:m*12,by,todo}}
 };
 function contractTotalsHTML(compact){
@@ -2058,21 +2117,22 @@ function vContrats(){
   if(up.length)h+=`<div class="notice"><b>Renouvellements dans les 2 mois :</b> ${up.map(c=>esc(c.name)+' ('+fdate(c.renewal)+')').join(', ')}</div>`;
   if(!cs.length)return h+'<p class="empty">Aucune charge enregistrée.</p>';
   const card=c=>{const per=CT.per(c);const mi=CT.missing(c);const hist=(c.history||[]).filter(x=>x.field==='amount'||x.amount!==undefined);const prev=hist.length?hist[hist.length-1]:null;const prevAmt=prev?(prev.old!==undefined?prev.old:prev.amount):null;
-    const acc=C.acc(c.accountId),cat=C.cat(c.catId),prop=C.prop(c.propertyId);
+    const acc=C.acc(c.accountId),cat=C.cat(c.catId),prop=C.prop(c.propertyId),coL=C.company(c.companyId);
     return `<div class="card" style="${CT.active(c)?'':'opacity:.62'}"><div class="ch"><h3>${esc(c.name)}</h3><span class="small">${CT.active(c)?esc(c.org||'organisme à compléter'):'<span class="badge">inactif</span>'}</span></div><div class="cb">
     <div class="kv"><span class="k">Montant<small>${per?PERLBL[per]||('tous les '+per+' mois'):'<span class="warn">périodicité à confirmer</span>'}${prevAmt!=null?` · avant ${money(prevAmt)}`:''}</small></span><span class="v num money">${money(c.amount)}${prevAmt!=null&&c.amount>prevAmt?' <span class="badge warn">hausse</span>':''}</span></div>
     ${c.debitAmount!=null||CT.debitComputed(c)?`<div class="kv"><span class="k">Montant prélevé<small>${PERLBL[CT.debitPer(c)]||''}${CT.debitComputed(c)?' · calculé, à vérifier':''}</small></span><span class="v num money">${money(CT.debitAmount(c))}</span></div>`:''}
     <div class="kv"><span class="k">Équivalent mensuel</span><span class="v num money">${money(CT.monthly(c))}</span></div>
     <div class="kv"><span class="k">Prochain prélèvement<small>${esc(CT.skipLabel(c))}${c.endDate?(CT.skipLabel(c)?' · ':'')+'jusqu’au '+fdate(c.endDate):''}</small></span><span class="v small">${c.nextDate?fdate((CT.occurrences(c,'2100-01-01').find(d=>d>=todayISO()&&!CT.isDone(c,d)))||c.nextDate):'<span class="muted">à compléter</span>'}</span></div>
     <div class="kv"><span class="k">Banque de prélèvement</span><span class="v small">${acc?esc(acc.name):'<span class="muted">à confirmer</span>'}</span></div>
-    <div class="kv"><span class="k">Catégorie</span><span class="v small">${cat?esc(C.catName(c.catId)):'<span class="muted">—</span>'}${prop?' · '+esc(prop.name):''}</span></div>
+    <div class="kv"><span class="k">Catégorie</span><span class="v small">${cat?esc(C.catName(c.catId)):'<span class="muted">—</span>'}${prop?' · '+esc(prop.name):''}${coL?' · '+esc(coL.name):''}</span></div>
     ${c.login?`<div class="kv"><span class="k">Identifiant</span><span class="v small" style="display:flex;gap:6px;align-items:center;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis">${esc(c.login)}</span><button class="btn sm ghost" data-act="copy-login" data-id="${c.id}" aria-label="Copier l’identifiant">Copier</button></span></div>`:''}
     ${c.autoPay?'<p class="small pos" style="margin:6px 0 0">Prélèvements enregistrés automatiquement comme payés.</p>':''}
     ${c.notes?`<p class="small" style="margin:8px 0 0;white-space:pre-line">${esc(c.notes)}</p>`:''}
     ${mi.length&&CT.active(c)?`<p class="small warn" style="margin:6px 0 0">À compléter : ${mi.join(', ')}</p>`:''}
     <div class="btns">${c.url?`<a class="btn sm solid" href="${esc(c.url)}" target="_blank" rel="noopener">Ouvrir l’espace client ↗</a>`:''}<button class="btn sm" data-act="edit-contract" data-id="${c.id}">Modifier / compléter</button><button class="btn sm ghost" data-act="ct-toggle" data-id="${c.id}">${CT.active(c)?'Désactiver':'Réactiver'}</button>${(c.history||[]).length?`<button class="btn sm ghost" data-act="ct-hist" data-id="${c.id}">Historique</button>`:''}</div></div></div>`};
   const act=cs.filter(CT.active),ina=cs.filter(c=>!CT.active(c));
-  h+='<div class="cards" style="margin-top:16px">'+act.map(card).join('')+'</div>';
+  const grpC=[['Personnel',act.filter(c=>!c.propertyId&&!c.companyId)],['Biens immobiliers',act.filter(c=>c.propertyId&&!c.companyId)],['Entreprises',act.filter(c=>c.companyId)]].filter(g=>g[1].length);
+  for(const [lb,L] of grpC)h+=`<h3 class="grp-title" style="margin:20px 2px 8px;font-family:var(--f-label);font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${lb} · ${L.length}</h3><div class="cards">${L.map(card).join('')}</div>`;
   if(ina.length)h+=`<details class="more" style="margin-top:16px"><summary>${ina.length} charge${ina.length>1?'s':''} inactive${ina.length>1?'s':''}</summary><div class="cards" style="margin-top:10px">${ina.map(card).join('')}</div></details>`;
   return h;
 }
@@ -2095,6 +2155,7 @@ function contractForm(id,preset){
     {k:'skipTxt',l:'Mois sans prélèvement (facultatif)',ph:'ex. 11, 12',h:'Numéros des mois sautés chaque année, par exemple pour une taxe foncière mensualisée sur 10 mois.'},
     {k:'autoPay',l:'Enregistrer automatiquement chaque prélèvement comme payé, à son échéance',t:'check'},
     {k:'propertyId',l:'Bien immobilier lié',t:'select',o:[['','Aucun'],...S.cfg.properties.map(p=>[p.id,p.name])]},
+    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise liée',t:'select',o:[['','Aucune (charge personnelle)'],...S.cfg.companies.map(x=>[x.id,x.name])]}]:[]),
     {k:'url',l:'URL de l’espace client',t:'url',ph:'https://'},
     {k:'login',l:'Identifiant de connexion',ph:'ex. adresse e-mail ou numéro client',h:'Jamais de mot de passe ni de code d’authentification.'},
     {k:'start',l:'Date de début du contrat',t:'date',h:'Les prélèvements passés depuis cette date sont ajoutés, au jour du mois du prochain prélèvement.'},
@@ -2111,8 +2172,65 @@ function contractForm(id,preset){
       if(id){const L={name:'Nom',org:'Organisme',amount:'Montant',period:'Périodicité',debitAmount:'Montant prélevé',debitPeriod:'Fréquence de prélèvement',accountId:'Banque',catId:'Catégorie',nextDate:'Prochain prélèvement',active:'Statut',url:'Espace client',login:'Identifiant',renewal:'Renouvellement'};
         const fmt=(k,v)=>v==null||v===''?'—':['amount','debitAmount'].includes(k)?money(v):k==='period'||k==='debitPeriod'?(PERLBL[v]||v):k==='accountId'?((C.acc(v)||{}).name||v):k==='catId'?C.catName(v):k==='active'?(v===false?'inactif':'actif'):k==='nextDate'||k==='renewal'?fdate(v):String(v);
         for(const k of Object.keys(L)){const a=before[k]??null,b=o[k]??null;const na=k==='active'?a!==false:a,nb=b;if(String(na??'')!==String(nb??''))(c.history=c.history||[]).push({date:todayISO(),field:k,label:L[k],old:fmt(k,na),new:fmt(k,nb),...(k==='amount'?{amount:a}:{})})}}
-      Object.assign(c,o);if(!c.done)c.done={};if(o.org&&!S.cfg.orgs.includes(o.org))S.cfg.orgs.push(o.org);if(!id)S.cfg.contracts.push(c);saveCfg().then(autoGenerate);toast('Charge enregistrée')},
-    {wide:true,onDelete:id?()=>{S.cfg.contracts=S.cfg.contracts.filter(x=>x.id!==id);saveCfg()}:null,extra:`<datalist id="org-list">${S.cfg.orgs.map(o=>`<option value="${esc(o)}">`).join('')}</datalist><p class="small muted">Supprimer une charge ne supprime pas les opérations déjà enregistrées. Pour l’arrêter en gardant son historique, décoche « Charge active ».</p>`});
+      if('companyId' in o&&!o.companyId){delete o.companyId;delete c.companyId}
+      Object.assign(c,o);if(!c.done)c.done={};if(o.org&&!S.cfg.orgs.includes(o.org))S.cfg.orgs.push(o.org);if(!id)S.cfg.contracts.push(c);LINES.fromContract(c);saveCfg().then(autoGenerate);toast('Charge enregistrée')},
+    {wide:true,onDelete:id?()=>{LINES.unlink(c);S.cfg.contracts=S.cfg.contracts.filter(x=>x.id!==id);saveCfg()}:null,extra:`<datalist id="org-list">${S.cfg.orgs.map(o=>`<option value="${esc(o)}">`).join('')}</datalist><p class="small muted">Supprimer une charge ne supprime pas les opérations déjà enregistrées. Pour l’arrêter en gardant son historique, décoche « Charge active ».</p>`});
+}
+/* Lignes de recettes et charges d'un bien ou d'une entreprise. Une charge peut être un contrat (prélèvement régulier) :
+   il est alors créé dans Contrats, rattaché au bien ou à l'entreprise, et les deux restent synchronisés (montant, périodicité). */
+const LINES={
+  owner(kind,id){return kind==='co'?(S.cfg.companies||[]).find(x=>x.id===id):C.prop(id)},
+  ownerOf(c){const r=c&&c.lineRef;if(!r)return null;const ow=LINES.owner(r.kind,r.id);const l=ow&&(ow.lines||[]).find(x=>x.id===r.line);return l?{ow,l}:null},
+  fromContract(c){const x=LINES.ownerOf(c);if(!x)return;x.l.amount=c.amount??x.l.amount;if(c.period)x.l.per=c.period;x.l.contractId=c.id},
+  unlink(c){const x=LINES.ownerOf(c);if(x)delete x.l.contractId;delete c.lineRef},
+  defCat(kind,ow){if(kind==='co'){const ec=S.cfg.cats.find(c=>c.kind==='exp'&&c.companyId===ow.id);return ec?ec.id:''}return ''},
+  /* Contrat créé d'office (formulaire du bien) : les infos de prélèvement restent à compléter dans Contrats. */
+  ensure(kind,ow,l){let c=l.contractId&&S.cfg.contracts.find(x=>x.id===l.contractId);const fresh=!c;
+    if(!c)c={id:uid(),active:true,history:[],done:{},catId:LINES.defCat(kind,ow),accountId:'',nextDate:'',org:''};
+    Object.assign(c,{name:c.name&&!fresh?c.name:l.label+(kind==='prop'?' · '+ow.name:''),amount:l.amount,period:Number(l.per)||1,lineRef:{kind,id:ow.id,line:l.id}});
+    if(kind==='prop')c.propertyId=ow.id;else c.companyId=ow.id;if(fresh)S.cfg.contracts.push(c);l.contractId=c.id;return fresh},
+  rowsHTML(kind,ow){return (ow.lines||[]).map(l=>`<button class="kv kvbtn" data-act="line-edit" data-k="${kind}" data-o="${ow.id}" data-id="${l.id}"><span class="k">${esc(l.label)}${l.verify?' <span class="badge warn">à vérifier</span>':''}${l.contractId&&S.cfg.contracts.some(c=>c.id===l.contractId)?' <span class="badge">contrat</span>':''}<small>${l.amount==null?'montant à compléter':money(l.amount)+(Number(l.per)===1?' / mois':Number(l.per)===3?' / trimestre':Number(l.per)===12?' / an':' / '+l.per+' mois')}</small></span><span class="v num money ${l.dir==='in'?'pos':'neg'}">${l.amount==null?'—':(l.dir==='in'?'+':'−')+money(Math.round(l.amount/(Number(l.per)||1)))}</span></button>`).join('')}
+};
+function lineForm(kind,oid,lid){
+  const ow=LINES.owner(kind,oid);if(!ow)return;ow.lines=ow.lines||[];
+  const l=lid?ow.lines.find(x=>x.id===lid):{id:uid(),label:'',amount:null,per:1,dir:'out',verify:false};if(!l)return;
+  const ct=l.contractId?S.cfg.contracts.find(c=>c.id===l.contractId):null;
+  const cv=ct||{catId:LINES.defCat(kind,ow)};
+  cfgForm(lid?'Ligne · '+l.label:'Nouvelle ligne · '+ow.name,[
+    {k:'label',l:'Libellé',req:true,ph:kind==='co'?'ex. Comptable, logiciel, assurance pro':'ex. Loyer, taxe foncière, assurance PNO'},
+    {k:'dir',l:'Type',t:'select',o:[['out','Charge'],['in','Recette']]},
+    {k:'amount',l:'Montant',t:'money'},
+    {k:'per',l:'Fréquence',t:'select',o:[['1','Par mois'],['3','Par trimestre'],['6','Par semestre'],['12','Par an']]},
+    {k:'verify',l:'Montant à vérifier',t:'check'},
+    {k:'isCt',l:'C’est un contrat (prélèvement régulier) : l’ajouter aussi dans Contrats',t:'check'},
+    {k:'_o',t:'html',html:'<div id="lf-ct" class="stack" style="border-left:3px solid var(--line);padding-left:12px">'},
+    {k:'org',l:'Organisme ou fournisseur',list:'org-list'},
+    {k:'catId',l:'Catégorie comptable',t:'select',o:[['','Choisir…'],...S.cfg.cats.filter(x=>x.kind==='exp').map(x=>[x.id,C.catName(x.id)])]},
+    {k:'accountId',l:'Banque de prélèvement',t:'select',o:[['','À confirmer'],...S.cfg.accounts.map(a=>[a.id,a.name])]},
+    {k:'nextDate',l:'Date du prochain prélèvement',t:'date',h:'Point de départ des échéances dans Prévisions.'},
+    {k:'autoPay',l:'Enregistrer automatiquement chaque prélèvement comme payé',t:'check'},
+    {k:'url',l:'URL de l’espace client',t:'url',ph:'https://'},
+    {k:'login',l:'Identifiant de connexion',h:'Jamais de mot de passe ni de code d’authentification.'},
+    {k:'_c',t:'html',html:'</div>'}],
+    {...l,per:String(l.per||1),isCt:!!ct,org:cv.org||'',catId:cv.catId||'',accountId:cv.accountId||'',nextDate:cv.nextDate||'',autoPay:!!cv.autoPay,url:cv.url||'',login:cv.login||''},
+    (o)=>{const err=t=>{$('#cf-err').textContent=t;return false};
+      if(o.isCt&&o.dir==='in')return err('Un contrat est une charge : choisis « Charge » ou décoche la case.');
+      if(o.isCt&&o.url&&!/^https?:\/\//i.test(o.url))return err('L’URL doit commencer par https://');
+      if(o.isCt&&/mot de passe|password|mdp/i.test(o.login||''))return err('N’enregistre que l’identifiant, jamais le mot de passe.');
+      if(lid&&l.amount!==o.amount)(ow.history=ow.history||[]).push({date:todayISO(),label:o.label,old:l.amount??null,new:o.amount,money:true});
+      if(!lid)(ow.history=ow.history||[]).push({date:todayISO(),label:'Ajout : '+o.label,old:null,new:o.amount,money:true});
+      Object.assign(l,{label:o.label,dir:o.dir==='in'?'in':'out',amount:o.amount,per:Number(o.per)||1,verify:!!o.verify});
+      if(!lid)ow.lines.push(l);
+      let msg='Ligne enregistrée';
+      if(o.isCt){const fresh=LINES.ensure(kind,ow,l);const c=S.cfg.contracts.find(x=>x.id===l.contractId);
+        Object.assign(c,{org:o.org,catId:o.catId,accountId:o.accountId,nextDate:o.nextDate,url:o.url,login:o.login});
+        if(o.autoPay&&!c.autoPay)c.autoFrom=todayISO();c.autoPay=!!o.autoPay;if(!o.autoPay)c.autoFrom=null;
+        if(o.org&&!S.cfg.orgs.includes(o.org))S.cfg.orgs.push(o.org);msg=fresh?'Ligne enregistrée · ajoutée dans Contrats':'Ligne et contrat mis à jour'}
+      else if(ct){LINES.unlink(ct);msg='Ligne enregistrée · le contrat reste dans Contrats'}
+      if(kind==='prop')nwSnapshot();saveCfg().then(autoGenerate);toast(msg)},
+    {wide:true,onDelete:lid?()=>{ow.lines=ow.lines.filter(x=>x.id!==lid);if(ct)LINES.unlink(ct);(ow.history=ow.history||[]).push({date:todayISO(),label:'Retrait : '+l.label,old:l.amount,new:null,money:true});if(kind==='prop')nwSnapshot();saveCfg();toast(ct?'Ligne supprimée · le contrat reste dans Contrats':'Ligne supprimée')}:null,
+     extra:`<datalist id="org-list">${S.cfg.orgs.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>${ct?'<p class="small muted">Ce contrat se modifie aussi depuis Contrats : montant et périodicité restent synchronisés avec cette ligne.</p>':''}`});
+  const box=$('#lf-ct'),ck=$('#cf-isCt');if(box&&ck){const upd=()=>{box.hidden=!ck.checked};ck.addEventListener('change',upd);upd()}
 }
 function contractHist(id){const c=S.cfg.contracts.find(x=>x.id===id);const h=(c.history||[]).slice().reverse();
   openModal('Historique · '+c.name,h.length?h.map(x=>`<div class="kv"><span class="k">${esc(x.label||'Montant')}<small>${fdate(x.date)}</small></span><span class="v small">${esc(x.old!==undefined?x.old:money(x.amount))} → ${esc(x.new!==undefined?x.new:'')}</span></div>`).join(''):'<p class="empty">Aucune modification.</p>','')}
@@ -2467,9 +2585,7 @@ function vReglages(){
     <label class="check"><input type="checkbox" id="set-ant" data-change="settings" ${st.anticipate?'checked':''}> Voir le mois tel qu’il sera à la fin : inscrire dès le 1er tous les contrats, dépenses et recettes récurrentes du mois</label>
     <p class="small muted" style="margin:0">Coché : les échéances du mois en cours (prélèvements, loyers, récurrences, même celles à confirmer) sont enregistrées dès le 1er, avec le badge « à venir » jusqu’à leur date. Soldes, cadrans et cashflow montrent la fin de mois. Décoché : chaque opération apparaît le jour de son arrivée, et les échéances à venir déjà inscrites sont retirées.</p>
   </div></div>
-  <div class="panel"><div class="toolbar" style="margin:0 0 6px"><h3 style="margin:0">Mes entreprises</h3><span class="sp"></span><button class="btn sm" data-act="co-edit">+ Ajouter une entreprise</button></div>
-    <p class="small muted" style="margin:0 0 6px">Chaque entreprise regroupe ses recettes et ses charges. Ses cotisations URSSAF et les dépenses des catégories qui lui sont rattachées apparaissent dans « Charges d’entreprise » sur ta feuille.</p>
-    ${(S.cfg.companies||[]).length?S.cfg.companies.map(x=>{const ec=S.cfg.cats.filter(c=>c.kind==='exp'&&c.companyId===x.id);return `<button class="row" data-act="co-edit" data-id="${x.id}"><span class="lbl">${esc(x.name)}<small>${esc(COREG[x.regime]||x.regime||'')} · recettes : ${(x.incCats||[]).map(id=>esc(C.catName(id))).join(', ')||'aucune'}${ec.length?' · charges : '+ec.map(c=>esc(c.name)).join(', '):''}</small></span><span class="chev">›</span></button>`}).join(''):'<p class="empty">Aucune entreprise.</p>'}</div>
+  <div class="panel"><div class="toolbar" style="margin:0 0 6px"><h3 style="margin:0">Mes entreprises</h3><span class="sp"></span><a class="btn sm" href="#entreprises">Ouvrir Entreprises →</a></div><p class="small muted" style="margin:0">Tes entreprises, leurs lignes, leurs contrats et leurs cotisations sont dans Patrimoine › Entreprises.</p></div>
   <div class="panel"><h3>Cotisations et charges automatiques</h3><p class="small muted">À chaque recette, les retenues sont calculées sur le montant encaissé et mises de côté dans « Retenues à provisionner ». Taux ${TAX_YEAR} préremplis : micro-entreprise BNC ${fpPct(FP.micro.bnc.urssaf)} + CFP ${fpPct(FP.micro.bnc.cfp)} ; salaire d’employé ${fpPct(FP.salarie.cotis)} de cotisations salariales + ${fpPct(FP.salarie.csg)} de CSG/CRDS (hors mutuelle et prévoyance) ; revenus fonciers ${fpPct(FP.foncier.ps)} de prélèvements sociaux. Vérifie qu’ils correspondent à ton statut.</p>
     ${S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent).map(c=>`<button class="row" data-act="edit-cat" data-id="${c.id}"><span class="lbl">${esc(c.name)}<small>${esc((TAX_PRESETS[(c.tax||{}).preset]||TAX_PRESETS.none).label)} · ${esc(C.taxSummary(c.tax))}</small></span><span class="chev">›</span></button>`).join('')}</div>
   <div class="panel"><h3>Catégories de recettes</h3><p class="small muted">Classifications personnelles, pas des catégories comptables ou fiscales officielles.</p>${cats('inc')}<p style="margin:10px 0 0"><button class="btn sm" data-act="edit-cat" data-kind="inc">+ Catégorie de recette</button></p></div>
@@ -2492,12 +2608,14 @@ const COREG={me_bnc:'Micro-entreprise BNC',me_cipav:'Micro-entreprise BNC (CIPAV
 function coForm(id){const L=S.cfg.companies=S.cfg.companies||[];const x=id?L.find(c=>c.id===id):{id:'co-'+uid(),name:'',regime:'eurl',incCats:[]};if(!x)return;
   const incs=S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent);const exps=S.cfg.cats.filter(c=>c.kind==='exp');
   cfgForm(id?'Entreprise · '+x.name:'Nouvelle entreprise',[{k:'name',l:'Nom',req:true,ph:'ex. Olympe Athlétique SASU'},{k:'regime',l:'Forme et régime',t:'select',o:Object.entries(COREG)},
-    {k:'_h1',t:'html',html:'<div class="grp">Ses recettes</div><p class="small muted" style="margin:0">Les cotisations URSSAF créées avec ces recettes sont rattachées à cette entreprise.</p>'},
+    {k:'_h1',t:'html',html:`<div class="grp">Ses recettes</div><p class="small muted" style="margin:0">Les cotisations URSSAF créées avec ces recettes sont rattachées à cette entreprise.${id?'':' Ne coche rien pour une nouvelle activité : une catégorie « Chiffre d’affaires » à son nom est créée, avec les taux URSSAF de la micro-entreprise si c’est ton régime.'}</p>`},
     ...incs.map(c=>({k:'inc_'+c.id,l:c.name,t:'check'})),
-    {k:'_h2',t:'html',html:'<div class="grp">Ses charges</div><p class="small muted" style="margin:0">Les dépenses de ces catégories sont des charges de cette entreprise.</p>'},
+    {k:'_h2',t:'html',html:`<div class="grp">Ses charges</div><p class="small muted" style="margin:0">Les dépenses de ces catégories sont des charges de cette entreprise.${id?'':' Sans case cochée, une catégorie « Charges » à son nom est créée.'}</p>`},
     ...exps.filter(c=>!c.parent||!exps.find(p=>p.id===c.parent&&p.companyId===x.id)).map(c=>({k:'exp_'+c.id,l:(c.parent?'↳ ':'')+c.name,t:'check'}))],
     {...x,...Object.fromEntries(incs.map(c=>['inc_'+c.id,(x.incCats||[]).includes(c.id)])),...Object.fromEntries(exps.map(c=>['exp_'+c.id,c.companyId===x.id]))},
     (o)=>{x.name=o.name.trim();x.regime=o.regime;x.incCats=incs.filter(c=>o['inc_'+c.id]).map(c=>c.id);
+      if(!x.incCats.length){const ci={id:'i-co-'+uid(),kind:'inc',name:'Chiffre d’affaires · '+x.name,parent:null,nature:'actif',bucket:'exploit'};if(MICRO_CASES[x.regime]&&TAX_PRESETS[x.regime])ci.tax={...taxFromPreset(x.regime),vl:false};S.cfg.cats.push(ci);x.incCats=[ci.id]}
+      if(!exps.some(c=>o['exp_'+c.id]))S.cfg.cats.push({id:'e-co-'+uid(),kind:'exp',name:'Charges · '+x.name,parent:null,inRef:true,companyId:x.id,note:'Charges de l’entreprise'});
       for(const c of incs)if(o['inc_'+c.id])for(const y of L)if(y!==x)y.incCats=(y.incCats||[]).filter(i=>i!==c.id);
       for(const c of exps){if(('exp_'+c.id) in o){if(o['exp_'+c.id])c.companyId=x.id;else if(c.companyId===x.id)delete c.companyId}}
       if(!id)L.push(x);saveCfg();toast('Entreprise enregistrée')},
@@ -2748,7 +2866,8 @@ function propForm(id){
     <label class="f">Montant<input type="text" inputmode="decimal" data-l="amount" value="${esc(cIn(l.amount))}" placeholder="à compléter"></label>
     <label class="f">Périodicité<select data-l="per">${[[1,'par mois'],[3,'par trimestre'],[6,'par semestre'],[12,'par an']].map(([v,t])=>`<option value="${v}" ${Number(l.per)===v?'selected':''}>${t}</option>`).join('')}</select></label>
     <label class="f">Sens<select data-l="dir"><option value="in" ${l.dir==='in'?'selected':''}>Recette</option><option value="out" ${l.dir!=='in'?'selected':''}>Charge</option></select></label>
-    <span style="display:flex;gap:8px;align-items:center;justify-content:space-between"><label class="check"><input type="checkbox" data-l="verify" ${l.verify?'checked':''}> à vérifier</label><button class="btn sm ghost" data-act="pl-del" data-i="${i}" aria-label="Retirer la ligne">Retirer</button></span></div>`).join('')}</div>
+    <span style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><label class="check"><input type="checkbox" data-l="verify" ${l.verify?'checked':''}> à vérifier</label><label class="check" title="Charge prélevée régulièrement : elle est ajoutée dans Contrats"><input type="checkbox" data-l="ct" ${(l._ct??!!l.contractId)?'checked':''}> contrat</label><button class="btn sm ghost" data-act="pl-del" data-i="${i}" aria-label="Retirer la ligne">Retirer</button></span></div>`).join('')}</div>
+    <p class="small muted" style="margin:0">Coche « contrat » pour une charge prélevée régulièrement (assurance, taxe foncière mensualisée, syndic…) : elle est ajoutée dans Contrats, où tu complètes la banque et la date de prélèvement.</p>
     <p style="margin:0"><button class="btn sm" data-act="pl-add">+ Ajouter une ligne</button></p>`;
   cfgForm(id?'Modifier le bien':'Ajouter un bien',[
     {k:'name',l:'Adresse ou nom du bien',req:true},{k:'usage',l:'Type de location',ph:'ex. Location non meublée'},
@@ -2774,11 +2893,17 @@ function propForm(id){
       if(id){for(const k of ['value','crd','quote']){if(o[k]!==p[k])log.push({date:today,label:k==='value'?'Valeur estimée':k==='crd'?'Capital restant dû':'Quote-part',old:p[k],new:o[k],money:k!=='quote'})}
         const om=Object.fromEntries((p.lines||[]).map(l=>[l.id,l]));for(const l of nl){const a=om[l.id];if(a&&a.amount!==l.amount)log.push({date:today,label:l.label,old:a.amount,new:l.amount,money:true});if(!a)log.push({date:today,label:'Ajout : '+l.label,old:null,new:l.amount,money:true})}
         for(const l of p.lines||[])if(!nl.find(x=>x.id===l.id))log.push({date:today,label:'Retrait : '+l.label,old:l.amount,new:null,money:true})}
-      for(const k of Object.keys(o))if(k.startsWith('_'))delete o[k];Object.assign(p,o,{lines:nl,history:log});if(!id)S.cfg.properties.push(p);nwSnapshot();saveCfg().then(autoGenerate);toast('Bien enregistré')},
+      for(const k of Object.keys(o))if(k.startsWith('_'))delete o[k];
+      for(const l of p.lines||[])if(l.contractId&&!nl.find(x=>x.id===l.id)){const c=S.cfg.contracts.find(x=>x.id===l.contractId);if(c)delete c.lineRef}
+      Object.assign(p,o,{lines:nl,history:log});if(!id)S.cfg.properties.push(p);
+      let nNew=0;for(const l of nl){const want=l._ct;delete l._ct;const c=l.contractId&&S.cfg.contracts.find(x=>x.id===l.contractId);
+        if(want){if(LINES.ensure('prop',p,l))nNew++}else if(c)LINES.unlink(c);else delete l.contractId}
+      nwSnapshot();saveCfg().then(autoGenerate);toast(nNew?`Bien enregistré · ${nNew} contrat${nNew>1?'s':''} ajouté${nNew>1?'s':''} dans Contrats, à compléter`:'Bien enregistré')},
     {wide:true,onDelete:id?()=>{S.cfg.properties=S.cfg.properties.filter(x=>x.id!==id);nwSnapshot();saveCfg();toast('Bien supprimé')}:null});
   const wrap=$('#pl-wrap');const draw=()=>{wrap.innerHTML=linesHTML()};draw();
-  function sync(){$$('#pl-lines [data-i]').forEach(r=>{const i=Number(r.dataset.i);const L=lines[i];r.querySelectorAll('[data-l]').forEach(e=>{const k=e.dataset.l;if(k==='verify')L.verify=e.checked;else if(k==='amount')L._raw=e.value;else if(k==='per')L.per=Number(e.value);else L[k]=e.value})})}
-  function readLines(){sync();const out=[];for(const l of lines){if(!l.label||!l.label.trim())continue;const raw=l._raw!==undefined?l._raw:cIn(l.amount);const a=parseMoney(raw);if(Number.isNaN(a)){$('#cf-err').textContent=`Montant invalide pour « ${l.label} ».`;return false}out.push({id:l.id||uid(),label:l.label.trim(),amount:a,per:Number(l.per)||1,dir:l.dir==='in'?'in':'out',verify:!!l.verify})}return out}
+  function sync(){$$('#pl-lines [data-i]').forEach(r=>{const i=Number(r.dataset.i);const L=lines[i];r.querySelectorAll('[data-l]').forEach(e=>{const k=e.dataset.l;if(k==='verify')L.verify=e.checked;else if(k==='ct')L._ct=e.checked;else if(k==='amount')L._raw=e.value;else if(k==='per')L.per=Number(e.value);else L[k]=e.value})})}
+  function readLines(){sync();const out=[];for(const l of lines){if(!l.label||!l.label.trim())continue;const raw=l._raw!==undefined?l._raw:cIn(l.amount);const a=parseMoney(raw);if(Number.isNaN(a)){$('#cf-err').textContent=`Montant invalide pour « ${l.label} ».`;return false}if((l._ct??!!l.contractId)&&l.dir==='in'){$('#cf-err').textContent=`« ${l.label} » : un contrat est une charge, choisis « Charge » ou décoche « contrat ».`;return false}
+    out.push({id:l.id||uid(),label:l.label.trim(),amount:a,per:Number(l.per)||1,dir:l.dir==='in'?'in':'out',verify:!!l.verify,...(l.contractId?{contractId:l.contractId}:{}),_ct:l._ct??!!l.contractId})}return out}
   modalState.plAdd=()=>{sync();lines.push({id:uid(),label:'',amount:null,per:1,dir:'out'});draw()};
   modalState.plDel=(i)=>{sync();lines.splice(i,1);draw()};
 }
@@ -2938,7 +3063,7 @@ document.addEventListener('click',async e=>{
     case 'pf-lot':closeModal(true);pfLotForm(id);break;
     case 'pf-price':closeModal(true);pfPriceForm(id);break;
     case 'pf-lot-del':armDelete(t,()=>{const p=pfCfg().positions.find(x=>x.id===id);p.lots=(p.lots||[]).filter(l=>l.id!==t.dataset.lot);saveCfg()});break;
-    case 'pf-help':pfHelp();break;
+    case 'pf-help':pfHelp();break;case 'pf-bulk':pfBulk();break;
     case 'pf-refresh':if(!S.pfBusy)pfRefresh();break;
     case 'quad-toggle':{const k=t.dataset.q;S.quadOpen[k]=!S.quadOpen[k];LS.set('quadOpen',S.quadOpen);render();break}
     case 'tile-go':{const k=t.dataset.q;S.quadOpen[k]=true;LS.set('quadOpen',S.quadOpen);render();const el=document.getElementById('q-'+k);if(el){el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1200)}break}
@@ -2963,7 +3088,7 @@ document.addEventListener('click',async e=>{
     case 'pl-add':modalState.plAdd();break;case 'pl-del':modalState.plDel(Number(t.dataset.i));break;
     case 'edit-src':srcForm(id);break;
     case 'edit-cat':catForm(id,t.dataset.kind);break;
-    case 'co-edit':coForm(id);break;
+    case 'co-edit':coForm(id);break;case 'co-y':S.coY=Number(t.dataset.v);render();break;
     case 'ob-open':obOpen(false);break;case 'ob-go':obApply();break;case 'shell-update':if(window.CFShell)window.CFShell.checkUpdate(true);break;
     case 'edit-rec':recForm(id);break;
     case 'rec-confirm':recConfirm(id,t.dataset.date,false,t.dataset.src);break;case 'rec-skip':recConfirm(id,t.dataset.date,true,t.dataset.src);break;
@@ -2972,6 +3097,7 @@ document.addEventListener('click',async e=>{
     case 'ct-hist':contractHist(id);break;
     case 'copy-login':{const c=S.cfg.contracts.find(x=>x.id===id);try{await navigator.clipboard.writeText(c.login);toast('Identifiant copié')}catch(e){toast('Copie impossible ici : '+c.login)}break}
     case 'edit-contract':contractForm(id);break;
+    case 'line-edit':lineForm(t.dataset.k,t.dataset.o,id);break;case 'line-new':lineForm(t.dataset.k,t.dataset.o);break;
     case 'ft-edit':ftForm();break;case 'ft-biz':ftBizForm(id);break;
     case 'ft-unvalidate':{const ft=S.cfg.fastTrack;ft.exitDate=null;ft.passiveAtExit=null;saveCfg();toast('Sortie annulée');break}
     case 'clear-date':{const e=document.getElementById(t.dataset.for);if(e){e.value='';e.dispatchEvent(new Event('input',{bubbles:true}))}break}
