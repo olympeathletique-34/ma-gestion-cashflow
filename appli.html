@@ -794,8 +794,17 @@ function migrate(c){
     c.cats.push({id:'e-pro',kind:'exp',name:'Charges d’entreprise',parent:null,inRef:true,companyId:co,note:'Cotisations, CFE, comptable, banque et assurance pro, logiciels'});
     for(const [id,n] of [['e-pro-cfe','CFE (cotisation foncière des entreprises)'],['e-pro-compta','Expert-comptable'],['e-pro-banque','Banque professionnelle'],['e-pro-assu','Assurance RC pro'],['e-pro-logiciels','Logiciels et abonnements pro'],['e-pro-autres','Autres charges d’entreprise']])c.cats.push({id,kind:'exp',name:n,parent:'e-pro',inRef:true})
     const u=c.cats.find(x=>x.id==='e-impots-urssaf');if(u&&u.companyId===undefined)u.companyId=co}
+  /* Une fois : relie les lignes de charges des biens et entreprises aux contrats déjà saisis (même bien ou entreprise, même montant, même périodicité, sans ambiguïté). */
+  if(!c.linkV){const cts=c.contracts||[];
+    for(const [kind,list] of [['prop',c.properties||[]],['co',c.companies||[]]])for(const ow of list)for(const l of (ow.lines||[])){
+      if(l.contractId&&!cts.some(x=>x.id===l.contractId))delete l.contractId;
+      if(l.dir==='in'||l.contractId||l.amount==null)continue;
+      const m=cts.filter(x=>!x.lineRef&&(kind==='prop'?x.propertyId===ow.id:x.companyId===ow.id)&&x.amount===l.amount&&(Number(x.period)||1)===(Number(l.per)||1));
+      if(m.length===1){l.contractId=m[0].id;m[0].lineRef={kind,id:ow.id,line:l.id};MIG.linked++}}
+    c.linkV=1;MIG.dirty=true}
   return c;
 }
+const MIG={dirty:false,linked:0};
 
 /* ==================== État & stockage ==================== */
 const S={cfg:migrate(defaultConfig()),months:{},prices:{history:{},src:{}},db:null,mode:'loading',route:'feuille',
@@ -2196,6 +2205,8 @@ function lineForm(kind,oid,lid){
   const l=lid?ow.lines.find(x=>x.id===lid):{id:uid(),label:'',amount:null,per:1,dir:'out',verify:false};if(!l)return;
   const ct=l.contractId?S.cfg.contracts.find(c=>c.id===l.contractId):null;
   const cv=ct||{catId:LINES.defCat(kind,ow)};
+  const same=c=>kind==='prop'?c.propertyId===ow.id:c.companyId===ow.id;
+  const free=S.cfg.contracts.filter(c=>!LINES.ownerOf(c)).sort((a,b)=>(same(b)-same(a))||String(a.name).localeCompare(String(b.name),'fr'));
   cfgForm(lid?'Ligne · '+l.label:'Nouvelle ligne · '+ow.name,[
     {k:'label',l:'Libellé',req:true,ph:kind==='co'?'ex. Comptable, logiciel, assurance pro':'ex. Loyer, taxe foncière, assurance PNO'},
     {k:'dir',l:'Type',t:'select',o:[['out','Charge'],['in','Recette']]},
@@ -2204,6 +2215,8 @@ function lineForm(kind,oid,lid){
     {k:'verify',l:'Montant à vérifier',t:'check'},
     {k:'isCt',l:'C’est un contrat (prélèvement régulier) : l’ajouter aussi dans Contrats',t:'check'},
     {k:'_o',t:'html',html:'<div id="lf-ct" class="stack" style="border-left:3px solid var(--line);padding-left:12px">'},
+    ...(!ct&&free.length?[{k:'linkCt',l:'Contrat',t:'select',o:[['','Créer un nouveau contrat'],...free.map(c=>[c.id,'Associer : '+c.name+(c.amount!=null?' · '+money(c.amount):'')])],h:'Si ce contrat existe déjà dans Contrats, associe-le plutôt que d’en créer un second.'}]:[]),
+    {k:'_n',t:'html',html:'<div id="lf-new" class="stack">'},
     {k:'org',l:'Organisme ou fournisseur',list:'org-list'},
     {k:'catId',l:'Catégorie comptable',t:'select',o:[['','Choisir…'],...S.cfg.cats.filter(x=>x.kind==='exp').map(x=>[x.id,C.catName(x.id)])]},
     {k:'accountId',l:'Banque de prélèvement',t:'select',o:[['','À confirmer'],...S.cfg.accounts.map(a=>[a.id,a.name])]},
@@ -2211,7 +2224,7 @@ function lineForm(kind,oid,lid){
     {k:'autoPay',l:'Enregistrer automatiquement chaque prélèvement comme payé',t:'check'},
     {k:'url',l:'URL de l’espace client',t:'url',ph:'https://'},
     {k:'login',l:'Identifiant de connexion',h:'Jamais de mot de passe ni de code d’authentification.'},
-    {k:'_c',t:'html',html:'</div>'}],
+    {k:'_c',t:'html',html:'</div></div>'}],
     {...l,per:String(l.per||1),isCt:!!ct,org:cv.org||'',catId:cv.catId||'',accountId:cv.accountId||'',nextDate:cv.nextDate||'',autoPay:!!cv.autoPay,url:cv.url||'',login:cv.login||''},
     (o)=>{const err=t=>{$('#cf-err').textContent=t;return false};
       if(o.isCt&&o.dir==='in')return err('Un contrat est une charge : choisis « Charge » ou décoche la case.');
@@ -2222,7 +2235,11 @@ function lineForm(kind,oid,lid){
       Object.assign(l,{label:o.label,dir:o.dir==='in'?'in':'out',amount:o.amount,per:Number(o.per)||1,verify:!!o.verify});
       if(!lid)ow.lines.push(l);
       let msg='Ligne enregistrée';
-      if(o.isCt){const fresh=LINES.ensure(kind,ow,l);const c=S.cfg.contracts.find(x=>x.id===l.contractId);
+      if(o.isCt&&o.linkCt){const c=S.cfg.contracts.find(x=>x.id===o.linkCt);
+        if(c){if(c.lineRef)LINES.unlink(c);c.lineRef={kind,id:ow.id,line:l.id};if(kind==='prop')c.propertyId=ow.id;else c.companyId=ow.id;l.contractId=c.id;
+          if(l.amount==null)l.amount=c.amount;else if(c.amount!==l.amount){(c.history=c.history||[]).push({date:todayISO(),field:'amount',label:'Montant',old:c.amount==null?'—':money(c.amount),new:money(l.amount),amount:c.amount});c.amount=l.amount}
+          c.period=l.per;msg='Ligne associée au contrat « '+c.name+' »'}}
+      else if(o.isCt){const fresh=LINES.ensure(kind,ow,l);const c=S.cfg.contracts.find(x=>x.id===l.contractId);
         Object.assign(c,{org:o.org,catId:o.catId,accountId:o.accountId,nextDate:o.nextDate,url:o.url,login:o.login});
         if(o.autoPay&&!c.autoPay)c.autoFrom=todayISO();c.autoPay=!!o.autoPay;if(!o.autoPay)c.autoFrom=null;
         if(o.org&&!S.cfg.orgs.includes(o.org))S.cfg.orgs.push(o.org);msg=fresh?'Ligne enregistrée · ajoutée dans Contrats':'Ligne et contrat mis à jour'}
@@ -2230,7 +2247,8 @@ function lineForm(kind,oid,lid){
       if(kind==='prop')nwSnapshot();saveCfg().then(autoGenerate);toast(msg)},
     {wide:true,onDelete:lid?()=>{ow.lines=ow.lines.filter(x=>x.id!==lid);if(ct)LINES.unlink(ct);(ow.history=ow.history||[]).push({date:todayISO(),label:'Retrait : '+l.label,old:l.amount,new:null,money:true});if(kind==='prop')nwSnapshot();saveCfg();toast(ct?'Ligne supprimée · le contrat reste dans Contrats':'Ligne supprimée')}:null,
      extra:`<datalist id="org-list">${S.cfg.orgs.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>${ct?'<p class="small muted">Ce contrat se modifie aussi depuis Contrats : montant et périodicité restent synchronisés avec cette ligne.</p>':''}`});
-  const box=$('#lf-ct'),ck=$('#cf-isCt');if(box&&ck){const upd=()=>{box.hidden=!ck.checked};ck.addEventListener('change',upd);upd()}
+  const box=$('#lf-ct'),ck=$('#cf-isCt'),nw=$('#lf-new'),lk=$('#cf-linkCt');
+  if(box&&ck){const upd=()=>{box.hidden=!ck.checked;if(nw)nw.hidden=!!(lk&&lk.value)};ck.addEventListener('change',upd);if(lk)lk.addEventListener('change',upd);upd()}
 }
 function contractHist(id){const c=S.cfg.contracts.find(x=>x.id===id);const h=(c.history||[]).slice().reverse();
   openModal('Historique · '+c.name,h.length?h.map(x=>`<div class="kv"><span class="k">${esc(x.label||'Montant')}<small>${fdate(x.date)}</small></span><span class="v small">${esc(x.old!==undefined?x.old:money(x.amount))} → ${esc(x.new!==undefined?x.new:'')}</span></div>`).join(''):'<p class="empty">Aucune modification.</p>','')}
@@ -3238,7 +3256,7 @@ async function boot(){
   if(!db){S.mode='local';render();autoGenerate();return}
   S.db=db;S.mode='db';render();
   db.doc('fin/prices').onSnapshot(snap=>{if(snap.exists){const d=clone(snap.data());S.prices={history:d.history||{},src:d.src||{},updatedAt:d.updatedAt||null};if(S.pfPending&&S.prices.updatedAt&&Date.parse(S.prices.updatedAt)>S.pfPending){S.pfPending=null;toast('Cours mis à jour')}}render()},err=>console.warn(err));
-  db.doc('fin/config').onSnapshot(snap=>{if(snap.exists){S.cfg=migrate(clone(snap.data()))}S.cfgLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des réglages impossible pour le moment.')});
+  db.doc('fin/config').onSnapshot(snap=>{if(snap.exists){MIG.dirty=false;MIG.linked=0;S.cfg=migrate(clone(snap.data()));if(MIG.dirty){saveCfg();if(MIG.linked)toast(MIG.linked+(MIG.linked>1?' lignes de biens reliées à leurs contrats':' ligne reliée à son contrat'))}}S.cfgLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des réglages impossible pour le moment.')});
   db.collection('memos').onSnapshot(qs=>{S.memos=qs.docs.map(d=>({id:d.id,...d.data()}));S.memosLoaded=true;if(S.route==='memos')render()},err=>console.warn(err));
   db.collection('months').onSnapshot(qs=>{if(S.inflight>0)return;const m={};qs.docs.forEach(d=>{const x=d.data();m[d.id]=(x&&x.items)||[]});S.months=m;S.monthsLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des opérations impossible pour le moment.')});
 }
