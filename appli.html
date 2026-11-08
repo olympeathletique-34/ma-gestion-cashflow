@@ -187,6 +187,7 @@ button.tile:hover{transform:translateY(-2px)}
 .btn.danger{border-color:var(--exp);color:var(--exp)}
 .btn.danger.armed{background:var(--exp);color:#fff}
 .btn.sm{min-height:32px;padding:4px 12px;font-size:13px}
+.aibox{border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:12px;background:var(--soft)}.aibox textarea{min-height:0;font-size:13px}#ai-prompt{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .linkbtn{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font-family:var(--f-label);font-weight:600}
 
@@ -1896,7 +1897,7 @@ function vPortfolio(){
     <div class="hstats"><div class="hstat"><div class="k">Investi</div><div class="v num money">${money(tot.c)}</div><small>prix d’achat + frais</small></div>
       <div class="hstat"><div class="k">Plus-value latente</div><div class="v num money">${moneyS(pl)}</div><small>${tot.c?(pl>=0?'+':'')+(pl/tot.c*100).toFixed(1).replace('.',',')+' %':''}</small></div>
       <div class="hstat"><div class="k">Lignes</div><div class="v num">${ps.length}</div><small>${ps.filter(p=>p.kind==='crypto').length} crypto</small></div></div></section>
-  <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?`<button class="btn sm solid" data-act="pf-bulk">↻ Mettre à jour les cours</button>`:''}${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
+  <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?`<button class="btn sm solid" data-act="pf-bulk">↻ Mettre à jour les cours</button>`:`<button class="btn sm" data-act="pf-bulk">Saisir / via une IA</button>`}${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
   ${S.pfPending?'<p class="small muted" style="margin:0 2px 8px">Claude récupère les cours sur le web ; ils s’afficheront ici automatiquement, en général en 2 à 5 minutes.</p>':''}`;
   if(!ps.length)return h+`<div class="panel"><p class="empty">Ajoute ta première ligne : ISIN (ex. FR0000120271) ou code crypto (ex. BTC), date d’achat, quantité et prix unitaire payé.</p></div>`;
   h+=`<div class="panel"><h3>Sous-totaux par type</h3>${pfSummaryTable()}<p class="small muted" style="margin:6px 0 0">Investi = prix d’achat + frais. Gain ou perte latents, au dernier cours relevé.</p></div>`;
@@ -1963,20 +1964,66 @@ function pfPriceForm(id){const p=pfCfg().positions.find(x=>x.id===id);
 /* Version installée : tous les cours sur un seul écran, saisis à la main (l'appli ne se connecte à aucun site de Bourse ou de crypto). */
 function pfBulk(){const ps=pfCfg().positions.filter(p=>PFL.qty(p)>1e-9);if(!ps.length){toast('Ajoute d’abord une action, un ETF ou une crypto.');return}
   const nf=x=>x==null?'':String(Math.round(x*10000)/10000).replace('.',',');
-  cfgForm('Mettre à jour les cours',[{k:'date',l:'Date des cours',t:'date'},{k:'_h',t:'html',html:'<p class="small muted" style="margin:0">Indique le cours unitaire en euros de chaque ligne. Laisse vide pour garder le dernier cours.</p>'},
+  const AI=PFAI.prompt(ps,nf);
+  cfgForm('Mettre à jour les cours',[{k:'_ai',t:'html',html:`<div class="aibox stack">
+      <div><b>Avec ton IA (ChatGPT, Claude, Gemini, Perplexity…)</b><p class="small muted" style="margin:4px 0 0">1. Copie la demande et colle-la dans l’IA de ton choix (de préférence avec la recherche web activée). 2. Copie toute sa réponse et colle-la ci-dessous. Les cours se remplissent tout seuls : tu vérifies, puis tu enregistres.</p></div>
+      <textarea id="ai-prompt" rows="5" readonly class="small">${esc(AI.text)}</textarea>
+      <div class="toolbar" style="margin:0"><button type="button" class="btn sm solid" id="ai-copy">Copier la demande</button>${DIST?'<button type="button" class="btn sm" id="ai-dl">Télécharger le tableau (.csv)</button>':''}</div>
+      <textarea id="ai-resp" rows="4" placeholder="Colle ici la réponse de l’IA"></textarea>
+      <div class="toolbar" style="margin:0"><button type="button" class="btn sm solid" id="ai-read">Remplir les cours</button><span class="small" id="ai-msg" role="status"></span></div></div>`},
+    {k:'date',l:'Date des cours',t:'date'},{k:'_h',t:'html',html:'<p class="small muted" style="margin:0">Ou indique toi-même le cours unitaire en euros de chaque ligne. Laisse vide pour garder le dernier cours.</p>'},
     ...ps.map(p=>{const q=PFL.quote(p);return {k:'p_'+p.id,l:esc(p.name||pfKey(p))+` <small>${esc(pfKey(p))}${q?' · dernier cours '+nf(q.p)+' € le '+fdate(q.d):''}</small>`,ph:'cours en €',t:'text'}})],
     {date:todayISO()},(o)=>{const d=o.date||todayISO();let n=0;S.prices.history=S.prices.history||{};S.prices.src=S.prices.src||{};
       for(const p of ps){const raw=(o['p_'+p.id]||'').trim();if(!raw)continue;const x=Number(raw.replace(/\s/g,'').replace(',','.'));if(!(x>0)){$('#cf-err').textContent=`Cours invalide pour ${p.name||pfKey(p)}.`;return false}
         const k=pfKey(p);const h=(S.prices.history[k]||[]).filter(e=>e[0]!==d);h.push([d,x]);h.sort((a,b)=>a[0].localeCompare(b[0]));S.prices.history[k]=h;S.prices.src[k]='saisie manuelle';n++}
       if(!n){$('#cf-err').textContent='Indique au moins un cours.';return false}
       S.prices.updatedAt=new Date().toISOString();savePrices();render();toast(n+' cours mis à jour')},{wide:true});
-  document.querySelectorAll('[id^="cf-p_"]').forEach(e=>{e.inputMode='decimal'});const el=document.querySelector('[id^="cf-p_"]');if(el)el.focus()}
-function pfHelp(){if(DIST){openModal('Mise à jour des cours','<div class="stack small"><p style="margin:0">Tes données restent sur cet appareil : l’appli ne se connecte à aucun site de Bourse ou de crypto.</p><p style="margin:0">Pour mettre tes cours à jour, touche « Mettre à jour les cours » : toutes tes lignes s’affichent sur un seul écran. Tu peux aussi ouvrir une ligne puis « Saisir un cours ». Une fois par mois, au moment de ton PAYDAY, suffit largement.</p><p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>','');return}openModal('Mise à jour des cours',`<div class="stack small">
+  document.querySelectorAll('[id^="cf-p_"]').forEach(e=>{e.inputMode='decimal'});
+  const msg=t=>{$('#ai-msg').textContent=t};
+  $('#ai-copy').addEventListener('click',async()=>{const ta=$('#ai-prompt');try{await navigator.clipboard.writeText(AI.text);msg('Demande copiée. Colle-la dans ton IA.')}catch(e){ta.focus();ta.select();msg('Sélectionnée : fais Copier (Ctrl+C ou appui long).')}});
+  const dl=$('#ai-dl');if(dl)dl.addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+AI.csv],{type:'text/csv;charset=utf-8'}));a.download='cours-a-mettre-a-jour-'+todayISO()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)});
+  $('#ai-read').addEventListener('click',()=>{const r=PFAI.parse($('#ai-resp').value,ps);
+    for(const [id,x] of Object.entries(r.prices)){const e=document.getElementById('cf-p_'+id);if(e)e.value=nf(x)}
+    if(r.date){const e=$('#cf-date');if(e)e.value=r.date}
+    const n=Object.keys(r.prices).length;msg(n?`${n} cours sur ${ps.length} remplis${r.missing.length?' · à saisir : '+r.missing.join(', '):''}. Vérifie puis enregistre.`:'Aucun cours reconnu : vérifie que la réponse reprend bien les codes (ISIN ou crypto).')})}
+/* Mise à jour des cours via n'importe quelle IA : une demande à copier (tableau des lignes + format de réponse imposé), puis lecture de la réponse collée. */
+const PFAI={
+  prompt(ps,nf){const today=todayISO();
+    const rows=ps.map(p=>{const q=PFL.quote(p);return [pfKey(p),(p.name||'').replace(/[;\n]/g,' '),p.kind==='crypto'?'Crypto':pfGroup(p)==='action'?'Action':'ETF / fonds',q?nf(q.p):'',q?q.d:'']});
+    const csv='CODE;NOM;TYPE;DERNIER_COURS_EUR;DATE_DERNIER_COURS\n'+rows.map(r=>r.join(';')).join('\n');
+    const text=`Donne-moi le dernier cours connu, en euros, de chacune des lignes ci-dessous (nous sommes le ${fdate(today)}).
+- CODE = code ISIN pour les actions, ETF et fonds ; symbole pour les cryptos.
+- Cherche sur le web si tu le peux (Boursorama, Euronext, Yahoo Finance, Morningstar, Google Finance, CoinGecko…).
+- Action ou ETF : dernier cours de clôture. Fonds : dernière valeur liquidative. Crypto : cours actuel en euros.
+- Si le titre est coté dans une autre devise, convertis-le en euros au taux du jour.
+- Si tu n'es pas sûr du cours, écris ? plutôt que d'inventer.
+
+Réponds UNIQUEMENT avec ces lignes, sans phrase ni commentaire, une ligne par actif, dans ce format exact :
+CODE;COURS_EUR;DATE_DU_COURS_AAAA-MM-JJ
+
+Mes lignes :
+${csv}`;
+    return {text,csv}},
+  num(t){t=t.replace(/[€\s\u00a0\u202f']/g,'');if(t.includes(',')&&t.includes('.'))t=t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');else t=t.replace(',','.');const x=Number(t);return x>0&&isFinite(x)?x:null},
+  parse(txt,ps){const prices={},dates=[];const keys=ps.map(p=>[p,pfKey(p)]).filter(x=>x[1]).sort((a,b)=>b[1].length-a[1].length);
+    for(let line of String(txt||'').split(/\r?\n/)){const U=line.toUpperCase();
+      const hit=keys.find(([p,k])=>new RegExp('(^|[^A-Z0-9])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^A-Z0-9])').test(U));if(!hit)continue;
+      const [p,k]=hit;let rest=line.slice(U.indexOf(k)+k.length);
+      const dm=rest.match(/(\d{4})-(\d{2})-(\d{2})|(\d{2})\/(\d{2})\/(\d{4})/);let d=null;
+      if(dm){d=dm[1]?`${dm[1]}-${dm[2]}-${dm[3]}`:`${dm[6]}-${dm[5]}-${dm[4]}`;rest=rest.replace(dm[0],' ')}
+      const cells=rest.split(/[;|\t]/).map(x=>x.trim()).filter(Boolean);let x=null;
+      for(const c of cells){if(c==='?')break;const m=c.match(/^[€]?\s*-?[\d][\d\s\u00a0\u202f.,']*\s*(€|EUR)?$/i);if(m){x=PFAI.num(c.replace(/EUR/i,''));if(x)break}}
+      if(x==null&&cells.length<2){const m=rest.match(/[\d][\d\u00a0\u202f.,]*/);if(m)x=PFAI.num(m[0])}
+      if(x){prices[p.id]=x;if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d))dates.push(d)}}
+    dates.sort();const date=dates.length?dates[dates.length-1]:null;
+    return {prices,date:date&&date<=todayISO()?date:null,missing:ps.filter(p=>!prices[p.id]).map(p=>p.name||pfKey(p))}}
+};
+function pfHelp(){if(DIST){openModal('Mise à jour des cours','<div class="stack small"><p style="margin:0">Tes données restent sur cet appareil : l’appli ne se connecte à aucun site de Bourse ou de crypto.</p><p style="margin:0">Pour mettre tes cours à jour, touche « Mettre à jour les cours » : toutes tes lignes s’affichent sur un seul écran. Le plus rapide : « Copier la demande », colle-la dans l’IA de ton choix (ChatGPT, Claude, Gemini…), puis colle sa réponse dans l’appli : les cours se remplissent tout seuls. Tu peux aussi ouvrir une ligne puis « Saisir un cours ». Une fois par mois, au moment de ton PAYDAY, suffit largement.</p><p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>','');return}openModal('Mise à jour des cours',`<div class="stack small">
   <p style="margin:0">Pour la sécurité de tes données, cette page ne peut pas se connecter aux sites de Bourse ou de crypto. Trois façons de tenir les cours à jour :</p>
   <p style="margin:0"><b>Bouton « Mettre à jour les cours »</b> : il lance une tâche Claude qui cherche les cours de chaque ligne sur le web et les inscrit ici, en quelques minutes. La première fois, Claude te demande l’autorisation d’utiliser le connecteur « Claude Code Remote ».</p>
   <p style="margin:0"><b>1. Demande à Claude</b> dans votre conversation : « mets à jour les cours de mon portefeuille ». Claude cherche les cours de chaque ISIN et code crypto et les inscrit ici, avec la date et la source.</p>
   <p style="margin:0"><b>2. Mise à jour programmée</b> : Claude peut le faire automatiquement chaque jour ou chaque semaine (tâche programmée à demander dans la conversation).</p>
-  <p style="margin:0"><b>3. À la main</b> : ouvre une ligne, puis « Saisir un cours ».</p>
+  <p style="margin:0"><b>3. Avec n’importe quelle IA</b> : bouton « Saisir / via une IA », copie la demande, colle-la dans ton IA, puis colle sa réponse dans l’appli. Ou ouvre une ligne, puis « Saisir un cours ».</p>
   <p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>`,'')}
 
 /* ==================== Vue : Immobilier ==================== */
