@@ -2,7 +2,7 @@
    recherche de mise à jour et boutons pour passer du livre à l'appli. */
 (function(){
   'use strict';
-  var VERSION='1.1.2';
+  var VERSION='1.1.3';
   var HASHES=["83a591b4ea621f55d5da448a359bb91b6ae6d020a7984ee7f3246cfaff16e845"];
   var KEY='mgc:access';
   var page=(location.pathname.split('/').pop()||'index.html').replace(/\.html$/,'')||'index';

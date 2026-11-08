@@ -187,6 +187,7 @@ button.tile:hover{transform:translateY(-2px)}
 .btn.danger{border-color:var(--exp);color:var(--exp)}
 .btn.danger.armed{background:var(--exp);color:#fff}
 .btn.sm{min-height:32px;padding:4px 12px;font-size:13px}
+.aiflag{border-color:var(--warn,#c77700)!important}.aiwarn{display:block;margin-top:4px;font-size:12px;color:var(--warn,#c77700)}.aiwarn.ok{color:var(--muted)}
 .aibox{border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:12px;background:var(--soft)}.aibox textarea{min-height:0;font-size:13px}#ai-prompt{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .linkbtn{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font-family:var(--f-label);font-weight:600}
@@ -1963,60 +1964,85 @@ function pfPriceForm(id){const p=pfCfg().positions.find(x=>x.id===id);
     savePrices();render();toast('Cours enregistré');setTimeout(()=>pfDetail(id),50)});}
 /* Version installée : tous les cours sur un seul écran, saisis à la main (l'appli ne se connecte à aucun site de Bourse ou de crypto). */
 function pfBulk(){const ps=pfCfg().positions.filter(p=>PFL.qty(p)>1e-9);if(!ps.length){toast('Ajoute d’abord une action, un ETF ou une crypto.');return}
-  const nf=x=>x==null?'':String(Math.round(x*10000)/10000).replace('.',',');
-  const AI=PFAI.prompt(ps,nf);
+  const nf=x=>x==null?'':PFAI.full(x).replace('.',',');
+  const AI=PFAI.prompt(ps);let filled={};
   cfgForm('Mettre à jour les cours',[{k:'_ai',t:'html',html:`<div class="aibox stack">
       <div><b>Avec ton IA (ChatGPT, Claude, Gemini, Perplexity…)</b><p class="small muted" style="margin:4px 0 0">1. Copie la demande et colle-la dans l’IA de ton choix (de préférence avec la recherche web activée). 2. Copie toute sa réponse et colle-la ci-dessous. Les cours se remplissent tout seuls : tu vérifies, puis tu enregistres.</p></div>
       <textarea id="ai-prompt" rows="5" readonly class="small">${esc(AI.text)}</textarea>
       <div class="toolbar" style="margin:0"><button type="button" class="btn sm solid" id="ai-copy">Copier la demande</button>${DIST?'<button type="button" class="btn sm" id="ai-dl">Télécharger le tableau (.csv)</button>':''}</div>
       <textarea id="ai-resp" rows="4" placeholder="Colle ici la réponse de l’IA"></textarea>
-      <div class="toolbar" style="margin:0"><button type="button" class="btn sm solid" id="ai-read">Remplir les cours</button><span class="small" id="ai-msg" role="status"></span></div></div>`},
-    {k:'date',l:'Date des cours',t:'date'},{k:'_h',t:'html',html:'<p class="small muted" style="margin:0">Ou indique toi-même le cours unitaire en euros de chaque ligne. Laisse vide pour garder le dernier cours.</p>'},
+      <div class="toolbar" style="margin:0"><button type="button" class="btn sm solid" id="ai-read">Remplir les cours</button></div><div class="small" id="ai-msg" role="status"></div></div>`},
+    {k:'date',l:'Date des cours',t:'date',h:'Utilisée pour les cours saisis à la main. Les cours remplis par l’IA gardent la date donnée sur leur ligne.'},{k:'_h',t:'html',html:'<p class="small muted" style="margin:0">Ou indique toi-même le cours unitaire en euros de chaque ligne. Laisse vide pour garder le dernier cours.</p>'},
     ...ps.map(p=>{const q=PFL.quote(p);return {k:'p_'+p.id,l:esc(p.name||pfKey(p))+` <small>${esc(pfKey(p))}${q?' · dernier cours '+nf(q.p)+' € le '+fdate(q.d):''}</small>`,ph:'cours en €',t:'text'}})],
-    {date:todayISO()},(o)=>{const d=o.date||todayISO();let n=0;S.prices.history=S.prices.history||{};S.prices.src=S.prices.src||{};
-      for(const p of ps){const raw=(o['p_'+p.id]||'').trim();if(!raw)continue;const x=Number(raw.replace(/\s/g,'').replace(',','.'));if(!(x>0)){$('#cf-err').textContent=`Cours invalide pour ${p.name||pfKey(p)}.`;return false}
-        const k=pfKey(p);const h=(S.prices.history[k]||[]).filter(e=>e[0]!==d);h.push([d,x]);h.sort((a,b)=>a[0].localeCompare(b[0]));S.prices.history[k]=h;S.prices.src[k]='saisie manuelle';n++}
+    {date:todayISO()},(o)=>{const d0=o.date||todayISO();let n=0;S.prices.history=S.prices.history||{};S.prices.src=S.prices.src||{};
+      for(const p of ps){const raw=(o['p_'+p.id]||'').trim();if(!raw)continue;const x=PFAI.num(raw);if(!(x>0)){$('#cf-err').textContent=`Cours invalide pour ${p.name||pfKey(p)}.`;return false}
+        const f=filled[p.id],ai=f&&Math.abs(f.x-x)<=Math.abs(x)*1e-9;const d=ai&&f.d?f.d:d0;
+        const k=pfKey(p);const h=(S.prices.history[k]||[]).filter(e=>e[0]!==d);h.push([d,x]);h.sort((a,b)=>a[0].localeCompare(b[0]));S.prices.history[k]=h;S.prices.src[k]=ai?('IA'+(f.src?' · '+f.src:'')):'saisie manuelle';n++}
       if(!n){$('#cf-err').textContent='Indique au moins un cours.';return false}
       S.prices.updatedAt=new Date().toISOString();savePrices();render();toast(n+' cours mis à jour')},{wide:true});
   document.querySelectorAll('[id^="cf-p_"]').forEach(e=>{e.inputMode='decimal'});
-  const msg=t=>{$('#ai-msg').textContent=t};
+  const msg=h=>{$('#ai-msg').innerHTML=h};
   $('#ai-copy').addEventListener('click',async()=>{const ta=$('#ai-prompt');try{await navigator.clipboard.writeText(AI.text);msg('Demande copiée. Colle-la dans ton IA.')}catch(e){ta.focus();ta.select();msg('Sélectionnée : fais Copier (Ctrl+C ou appui long).')}});
-  const dl=$('#ai-dl');if(dl)dl.addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+AI.csv],{type:'text/csv;charset=utf-8'}));a.download='cours-a-mettre-a-jour-'+todayISO()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)});
-  $('#ai-read').addEventListener('click',()=>{const r=PFAI.parse($('#ai-resp').value,ps);
-    for(const [id,x] of Object.entries(r.prices)){const e=document.getElementById('cf-p_'+id);if(e)e.value=nf(x)}
-    if(r.date){const e=$('#cf-date');if(e)e.value=r.date}
-    const n=Object.keys(r.prices).length;msg(n?`${n} cours sur ${ps.length} remplis${r.missing.length?' · à saisir : '+r.missing.join(', '):''}. Vérifie puis enregistre.`:'Aucun cours reconnu : vérifie que la réponse reprend bien les codes (ISIN ou crypto).')})}
-/* Mise à jour des cours via n'importe quelle IA : une demande à copier (tableau des lignes + format de réponse imposé), puis lecture de la réponse collée. */
+  const dl=$('#ai-dl');if(dl)dl.addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+AI.csv],{type:'text/csv;charset=utf-8'}));a.download='cours-a-mettre-a-jour-'+todayISO()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)});
+  $('#ai-read').addEventListener('click',()=>{const r=PFAI.parse($('#ai-resp').value,ps);filled=r.rows;
+    document.querySelectorAll('.aiwarn').forEach(e=>e.remove());document.querySelectorAll('[id^="cf-p_"]').forEach(e=>e.classList.remove('aiflag'));
+    const warns=[];
+    for(const p of ps){const e=document.getElementById('cf-p_'+p.id);const f=r.rows[p.id];const w=r.warn[p.id]||[];
+      if(f&&e)e.value=nf(f.x);
+      if(w.length){warns.push(esc(p.name||pfKey(p)));if(e){e.classList.add('aiflag');e.insertAdjacentHTML('afterend',`<small class="aiwarn">⚠ ${w.map(esc).join(' · ')}</small>`)}}
+      else if(f&&e)e.insertAdjacentHTML('afterend',`<small class="aiwarn ok">${f.d?'cours du '+fdate(f.d):'date non donnée'}${f.cur&&f.cur!=='EUR'?' · '+nf(f.native)+' '+esc(f.cur)+' converti':''}${f.src?' · '+esc(f.src):''}</small>`)}
+    const n=Object.keys(r.rows).length;
+    msg(n?`<b>${n} cours sur ${ps.length} remplis.</b>${warns.length?` <span class="warn">À vérifier (en orange) : ${warns.join(', ')}.</span>`:' Aucune anomalie détectée.'} Vérifie puis enregistre.`:'Aucun cours reconnu : vérifie que la réponse reprend bien les codes (ISIN ou crypto).')})}
+/* Mise à jour des cours via n'importe quelle IA : une demande à copier (tableau des lignes + format de réponse imposé), puis lecture de la réponse collée,
+   avec contrôles : devise non convertie, écart de plus de 30 % avec le dernier cours, cours daté de plus de 3 jours. */
 const PFAI={
-  prompt(ps,nf){const today=todayISO();
-    const rows=ps.map(p=>{const q=PFL.quote(p);return [pfKey(p),(p.name||'').replace(/[;\n]/g,' '),p.kind==='crypto'?'Crypto':pfGroup(p)==='action'?'Action':'ETF / fonds',q?nf(q.p):'',q?q.d:'']});
+  full(x){if(x==null)return '';if(Math.abs(x)>=1e-6)return String(Number(x.toPrecision(12)));return x.toFixed(14).replace(/0+$/,'')},
+  prompt(ps){const today=todayISO();
+    const rows=ps.map(p=>{const q=PFL.quote(p);return [pfKey(p),(p.name||'').replace(/[;\n]/g,' '),p.kind==='crypto'?'Crypto':pfGroup(p)==='action'?'Action':'ETF / fonds',q?PFAI.full(q.p):'',q?q.d:'']});
     const csv='CODE;NOM;TYPE;DERNIER_COURS_EUR;DATE_DERNIER_COURS\n'+rows.map(r=>r.join(';')).join('\n');
-    const text=`Donne-moi le dernier cours connu, en euros, de chacune des lignes ci-dessous (nous sommes le ${fdate(today)}).
-- CODE = code ISIN pour les actions, ETF et fonds ; symbole pour les cryptos.
-- Cherche sur le web si tu le peux (Boursorama, Euronext, Yahoo Finance, Morningstar, Google Finance, CoinGecko…).
-- Action ou ETF : dernier cours de clôture. Fonds : dernière valeur liquidative. Crypto : cours actuel en euros.
-- Si le titre est coté dans une autre devise, convertis-le en euros au taux du jour.
-- Si tu n'es pas sûr du cours, écris ? plutôt que d'inventer.
+    const text=`Donne-moi le cours le plus récent de chacune des lignes ci-dessous. Nous sommes le ${today}.
 
-Réponds UNIQUEMENT avec ces lignes, sans phrase ni commentaire, une ligne par actif, dans ce format exact :
-CODE;COURS_EUR;DATE_DU_COURS_AAAA-MM-JJ
+Règles :
+- CODE = code ISIN pour les actions, ETF et fonds ; symbole pour les cryptos.
+- Cherche chaque cours sur le web (Boursorama, Euronext, Yahoo Finance, Morningstar, Google Finance, CoinGecko…). N'utilise pas de cours tiré de ta mémoire.
+- Action ou ETF : cours de clôture de la dernière séance de Bourse. Fonds : dernière valeur liquidative publiée. Crypto : cours actuel.
+- La date doit être celle de la dernière séance ou d'aujourd'hui. Si tu ne trouves qu'un cours plus ancien, donne-le avec sa vraie date.
+- Indique le cours dans sa devise de cotation (USD, EUR…), puis sa valeur en euros (COURS_EUR) convertie au taux de change du jour. Si la devise est EUR, COURS_EUR = COURS.
+- Nombres : point décimal, aucun séparateur de milliers, au moins 4 chiffres significatifs (ex. 68044.50 ; 0.1069 ; 0.000004576).
+- SOURCE = nom du site où tu as lu le cours.
+- Si tu n'es pas sûr d'un cours, écris ? à la place du nombre plutôt que d'inventer.
+
+Réponds UNIQUEMENT avec les lignes de résultat, sans titre, sans en-tête, sans phrase ni commentaire, une ligne par actif, dans ce format exact :
+CODE;COURS;DEVISE;COURS_EUR;DATE_AAAA-MM-JJ;SOURCE
+
+Exemple de ligne : US0000000000;33.10;USD;28.52;2026-01-09;Yahoo Finance
 
 Mes lignes :
 ${csv}`;
     return {text,csv}},
-  num(t){t=t.replace(/[€\s\u00a0\u202f']/g,'');if(t.includes(',')&&t.includes('.'))t=t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');else t=t.replace(',','.');const x=Number(t);return x>0&&isFinite(x)?x:null},
-  parse(txt,ps){const prices={},dates=[];const keys=ps.map(p=>[p,pfKey(p)]).filter(x=>x[1]).sort((a,b)=>b[1].length-a[1].length);
+  num(t){t=String(t).replace(/[€\s  ']/g,'').replace(/EUR$/i,'');if(/e-?\d+$/i.test(t)){const x=Number(t.replace(',','.'));return x>0&&isFinite(x)?x:null}
+    if(t.includes(',')&&t.includes('.'))t=t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');else t=t.replace(',','.');const x=Number(t);return x>0&&isFinite(x)?x:null},
+  isNum(c){return /^[€]?\s*\d[\d\s  .,']*(e-?\d+)?\s*(€|EUR)?$/i.test(c)},
+  parse(txt,ps){const rows={},warn={};const keys=ps.map(p=>[p,pfKey(p)]).filter(x=>x[1]).sort((a,b)=>b[1].length-a[1].length);const today=todayISO();
+    const add=(id,t)=>{(warn[id]=warn[id]||[]).push(t)};
     for(let line of String(txt||'').split(/\r?\n/)){const U=line.toUpperCase();
       const hit=keys.find(([p,k])=>new RegExp('(^|[^A-Z0-9])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^A-Z0-9])').test(U));if(!hit)continue;
-      const [p,k]=hit;let rest=line.slice(U.indexOf(k)+k.length);
+      const [p,k]=hit;if(rows[p.id])continue;let rest=line.slice(U.indexOf(k)+k.length);
       const dm=rest.match(/(\d{4})-(\d{2})-(\d{2})|(\d{2})\/(\d{2})\/(\d{4})/);let d=null;
       if(dm){d=dm[1]?`${dm[1]}-${dm[2]}-${dm[3]}`:`${dm[6]}-${dm[5]}-${dm[4]}`;rest=rest.replace(dm[0],' ')}
-      const cells=rest.split(/[;|\t]/).map(x=>x.trim()).filter(Boolean);let x=null;
-      for(const c of cells){if(c==='?')break;const m=c.match(/^[€]?\s*-?[\d][\d\s\u00a0\u202f.,']*\s*(€|EUR)?$/i);if(m){x=PFAI.num(c.replace(/EUR/i,''));if(x)break}}
-      if(x==null&&cells.length<2){const m=rest.match(/[\d][\d\u00a0\u202f.,]*/);if(m)x=PFAI.num(m[0])}
-      if(x){prices[p.id]=x;if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d))dates.push(d)}}
-    dates.sort();const date=dates.length?dates[dates.length-1]:null;
-    return {prices,date:date&&date<=todayISO()?date:null,missing:ps.filter(p=>!prices[p.id]).map(p=>p.name||pfKey(p))}}
+      const cells=rest.split(/[;|\t]/).map(x=>x.trim()).filter(Boolean);
+      const ci=cells.findIndex((c,i)=>i>0&&/^[A-Z]{3}$/i.test(c)&&(cells[i-1]==='?'||PFAI.isNum(cells[i-1])));const curC=ci>=0?cells[ci]:null;const cur=curC?curC.toUpperCase():null;const after=ci>=0?cells.slice(ci+1):cells;const before=ci>=0?cells.slice(0,ci):[];
+      const nb=before.filter(c=>PFAI.isNum(c)).map(PFAI.num).filter(Boolean);const na=after.find(c=>c==='?'||PFAI.isNum(c));
+      let x=null,native=nb[0]??null;
+      if(ci>=0){if(na&&na!=='?')x=PFAI.num(na);else if(!na&&cur==='EUR')x=native;}
+      else{const n=cells.filter(c=>PFAI.isNum(c)).map(PFAI.num).filter(Boolean);x=n.length>=2?n[1]:n[0]??null;native=n.length>=2?n[0]:null}
+      if(!x){if(cur&&cur!=='EUR'&&native)add(p.id,`cours en ${cur} non converti en euros : saisis-le en euros`);continue}
+      if(d&&!(d>='2000-01-01'&&d<=today))d=null;
+      rows[p.id]={x,d,cur,native,src:(after.filter(c=>c!==na&&!PFAI.isNum(c)&&c!=='?').join(' ')||'').slice(0,40)};
+      if(cur&&cur!=='EUR'&&native&&Math.abs(x/native-1)<0.015)add(p.id,`même valeur en ${cur} et en euros : conversion oubliée ?`);
+      const q=PFL.quote(p);if(q&&q.p>0&&Math.abs(x/q.p-1)>0.3)add(p.id,`${x>q.p?'+':''}${Math.round((x/q.p-1)*100)} % depuis le dernier cours (${PFAI.full(q.p).replace('.',',')} €)`);
+      if(!d)add(p.id,'date non donnée');else if((new Date(today)-new Date(d))/864e5>3)add(p.id,'cours du '+fdate(d)+', plus de 3 jours');}
+    return {rows,warn}}
 };
 function pfHelp(){if(DIST){openModal('Mise à jour des cours','<div class="stack small"><p style="margin:0">Tes données restent sur cet appareil : l’appli ne se connecte à aucun site de Bourse ou de crypto.</p><p style="margin:0">Pour mettre tes cours à jour, touche « Mettre à jour les cours » : toutes tes lignes s’affichent sur un seul écran. Le plus rapide : « Copier la demande », colle-la dans l’IA de ton choix (ChatGPT, Claude, Gemini…), puis colle sa réponse dans l’appli : les cours se remplissent tout seuls. Tu peux aussi ouvrir une ligne puis « Saisir un cours ». Une fois par mois, au moment de ton PAYDAY, suffit largement.</p><p class="muted" style="margin:0">Les cours sont indicatifs et datés ; ce n’est pas un conseil en investissement.</p></div>','');return}openModal('Mise à jour des cours',`<div class="stack small">
   <p style="margin:0">Pour la sécurité de tes données, cette page ne peut pas se connecter aux sites de Bourse ou de crypto. Trois façons de tenir les cours à jour :</p>
