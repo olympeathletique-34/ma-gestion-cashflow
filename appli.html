@@ -2012,7 +2012,7 @@ Règles :
 - SOURCE = nom du site où tu as lu le cours.
 - Si tu n'es pas sûr d'un cours, écris ? à la place du nombre plutôt que d'inventer.
 
-Réponds UNIQUEMENT avec les lignes de résultat, sans titre, sans en-tête, sans phrase ni commentaire, une ligne par actif, dans ce format exact :
+Réponds UNIQUEMENT avec les lignes de résultat, dans un seul bloc de code, sans titre, sans en-tête, sans phrase ni commentaire, une ligne par actif, dans ce format exact :
 CODE;COURS;DEVISE;COURS_EUR;DATE_AAAA-MM-JJ;SOURCE
 
 Exemple de ligne : US0000000000;33.10;USD;28.52;2026-01-09;Yahoo Finance
@@ -2025,7 +2025,11 @@ ${csv}`;
   isNum(c){return /^[€]?\s*\d[\d\s  .,']*(e-?\d+)?\s*(€|EUR)?$/i.test(c)},
   parse(txt,ps){const rows={},warn={};const keys=ps.map(p=>[p,pfKey(p)]).filter(x=>x[1]).sort((a,b)=>b[1].length-a[1].length);const today=todayISO();
     const add=(id,t)=>{(warn[id]=warn[id]||[]).push(t)};
-    for(let line of String(txt||'').split(/\r?\n/)){const U=line.toUpperCase();
+    /* Réponse collée sur une seule ligne (retours à la ligne perdus au copier) : on recoupe avant chaque code suivi d'un séparateur. */
+    const esc2=k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const cut=new RegExp('(^|[\\s|])('+keys.map(x=>esc2(x[1])).join('|')+')(?=\\s*[;|\\t])','gi');
+    txt=String(txt||'').replace(cut,(m,a,k)=>(a==='|'?'\n|':'\n')+k);
+    for(let line of txt.split(/\r?\n/)){const U=line.toUpperCase();
       const hit=keys.find(([p,k])=>new RegExp('(^|[^A-Z0-9])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^A-Z0-9])').test(U));if(!hit)continue;
       const [p,k]=hit;if(rows[p.id])continue;let rest=line.slice(U.indexOf(k)+k.length);
       const dm=rest.match(/(\d{4})-(\d{2})-(\d{2})|(\d{2})\/(\d{2})\/(\d{4})/);let d=null;
