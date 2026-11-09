@@ -299,6 +299,9 @@ table.year tr.tot td{font-weight:700}
 .perpill small{color:var(--muted);font-size:12px;white-space:nowrap}
 .perpill .car{color:var(--muted);font-size:12px}
 @media (max-width:420px){.perpill small{display:none}.perpill .pk-kind{display:none}}
+.hsave{display:inline-flex;align-items:center;gap:6px;position:relative;flex:none}.hs-dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--warn);border:2px solid var(--paper)}
+@media (max-width:560px){.hsave .hs-l{display:none}.hsave{padding:4px 9px}}
+.bkbox{background:var(--soft);border-radius:var(--r-sm);padding:10px 12px;font-size:14px}.bkbox ul{margin:6px 0;padding-left:18px}.bkbox li{margin:2px 0}
 .tseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:2px;gap:2px;background:var(--soft)}
 .tseg button{border:0;background:none;padding:4px 10px;border-radius:999px;font:600 12px/1.2 var(--f-label);color:var(--muted);min-height:28px}
 .tseg button.on{background:var(--ink);color:var(--card)}
@@ -625,8 +628,10 @@ a.qpill:hover{background:color-mix(in srgb,var(--exp) 10%,var(--soft))}
   <header class="top">
     <a class="idpill" href="#reglages" aria-label="Joueur et profession, modifiables dans Réglages"><span class="tag">Joueur</span><span class="val" id="h-player"></span><span class="tag tag2">Profession</span><span class="val" id="h-prof"></span></a>
     <span class="sdot" id="h-status" role="status"></span>
+    <button class="btn sm hsave" data-act="backup" id="h-save" title="Sauvegarder mes données"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11v2.5h11V11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hs-l">Sauvegarder</span><i class="hs-dot" id="h-save-dot" hidden></i></button>
     <button class="btn sm" data-act="toggle-blur" id="h-blur"></button>
   </header>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
   <nav class="tabs" id="tabs" aria-label="Sections"></nav>
   <nav class="subtabs" id="subtabs" aria-label="Sous-sections" hidden></nav>
   <div id="view"><p class="empty">Chargement de ta feuille…</p></div>
@@ -1044,7 +1049,7 @@ function render(){
   document.body.classList.toggle('blur',!!S.blur);
   const hp=$('#h-player'),hf=$('#h-prof');hp.textContent=S.cfg.player.name||'Ton nom';hp.classList.toggle('ph',!S.cfg.player.name);hf.textContent=S.cfg.player.profession||'Ta profession';hf.classList.toggle('ph',!S.cfg.player.profession);
   const hs=$('#h-status');hs.className='sdot '+(S.mode==='db'?'ok':S.mode==='local'?'warn':'');hs.title=S.mode==='db'?(DIST?'Enregistré sur cet appareil':'Enregistré dans ta base privée'):S.mode==='local'?'Mode local : rien n’est enregistré':'Connexion…';hs.setAttribute('aria-label',hs.title);
-  const hb=$('#h-blur');hb.textContent=S.blur?'Afficher':'Masquer';hb.setAttribute('aria-pressed',String(!!S.blur));hb.title=S.blur?'Afficher les montants':'Masquer les montants';
+  BK.dot();const hb=$('#h-blur');hb.textContent=S.blur?'Afficher':'Masquer';hb.setAttribute('aria-pressed',String(!!S.blur));hb.title=S.blur?'Afficher les montants':'Masquer les montants';
   const grp=groupOf(S.route);S.lastSub=S.lastSub||{};if(!grp.nosub)S.lastSub[grp.k]=S.route;
   $('#tabs').innerHTML=GROUPS.map(g=>`<a href="#${g.nosub?g.r[0]:(S.lastSub[g.k]||g.r[0])}" ${g===grp?'aria-current="page"':''}>${g.l}</a>`).join('');
   {const nv=$('#tabs'),ac=nv.querySelector('[aria-current]');if(ac)nv.scrollLeft=Math.max(0,ac.offsetLeft-(nv.clientWidth-ac.offsetWidth)/2)}
@@ -2717,8 +2722,8 @@ function vReglages(){
   <div class="panel"><h3>Catégories de recettes</h3><p class="small muted">Classifications personnelles, pas des catégories comptables ou fiscales officielles.</p>${cats('inc')}<p style="margin:10px 0 0"><button class="btn sm" data-act="edit-cat" data-kind="inc">+ Catégorie de recette</button></p></div>
   <div class="panel"><h3>Catégories de dépenses</h3>${cats('exp')}<p style="margin:10px 0 0"><button class="btn sm" data-act="edit-cat" data-kind="exp">+ Catégorie de dépense</button></p></div>
   <div class="panel"><h3>Sauvegarde et export</h3><p class="small muted">${DIST?'Tes données sont enregistrées dans ce navigateur, sur cet appareil uniquement. Exporte une copie complète (JSON) chaque mois et range-la en lieu sûr : c’est elle qui te permet de changer d’appareil ou de tout récupérer.':'Exporte régulièrement une copie complète (JSON) et range-la dans ton Google Drive.'} Le CSV s’ouvre dans un tableur.</p>
-    <div class="toolbar"><button class="btn" data-act="export-json">Exporter tout (JSON)</button><button class="btn" data-act="export-csv">Exporter les opérations (CSV)</button><button class="btn ghost" data-act="import-json">Restaurer depuis un JSON</button></div>
-    <input type="file" id="import-file" accept="application/json,.json" hidden></div>
+    <div class="toolbar"><button class="btn solid" data-act="backup">Sauvegarder mes données…</button><button class="btn" data-act="export-json">Exporter tout (JSON)</button><button class="btn" data-act="export-csv">Exporter les opérations (CSV)</button><button class="btn ghost" data-act="import-json">Restaurer depuis un JSON</button></div>
+    </div>
   <div class="panel"><h3>Définitions des indicateurs</h3><div class="small" style="display:flex;flex-direction:column;gap:6px">
     <p style="margin:0"><b>Montant encaissé</b> : ce qui arrive réellement sur le compte. <b>Net disponible</b> : montant encaissé − retenues encore à payer (cotisations, impôt estimés). Si les retenues ont déjà été prélevées avant le versement, le montant encaissé est déjà net.</p>
     <p style="margin:0"><b>Cashflow (PAYDAY)</b> : recettes encaissées − dépenses payées sur la période, transferts internes exclus. Les montants prévus n’y entrent pas.</p>
@@ -3107,11 +3112,39 @@ function ftBizForm(id){const ft=S.cfg.fastTrack;const b=id?ft.businesses.find(x=
 
 /* ---------- Export / import ---------- */
 async function offerFile(filename,data){
+  if(DIST){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:/\.csv$/.test(filename)?'text/csv;charset=utf-8':'application/json'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast('Fichier téléchargé');return}catch(e){}}
   const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
   if(dl){try{await dl.save({filename,data});toast('Fichier prêt');return}catch(e){if(e&&e.code==='declined')return;if(e&&e.code==='rate_limited'){toast('Une demande est déjà ouverte. Réessaie dans un instant.');return}}}
   openModal('Copie de sauvegarde',`<p class="small">Le téléchargement n’est pas disponible ici. Copie ce contenu dans un fichier <b>${esc(filename)}</b>.</p><textarea id="exp-text" style="min-height:260px;font-family:monospace;font-size:12px" readonly>${esc(data)}</textarea>`,`<span class="sp"></span><button class="btn solid" data-act="copy-exp">Copier</button>`);
 }
-function exportJSON(){const data=JSON.stringify({app:'feuille-cashflow',version:1,exportedAt:new Date().toISOString(),config:S.cfg,months:S.months,memos:S.memos||[]},null,2);offerFile('cashflow-sauvegarde-'+todayISO()+'.json',data)}
+function backupData(){return JSON.stringify({app:'feuille-cashflow',version:1,exportedAt:new Date().toISOString(),config:S.cfg,months:S.months,memos:S.memos||[]},null,2)}
+function backupName(){return 'ma-gestion-cashflow-sauvegarde-'+todayISO()+'.json'}
+function exportJSON(){const data=backupData(),name=backupName();if(DIST){BK.download(name,data);return}offerFile(name,data).then(()=>BK.mark())}
+/* Sauvegarde : bouton dans l’en-tête, fenêtre qui explique où et comment ranger le fichier, rappel discret après 30 jours sans sauvegarde. */
+const BK={
+  key:'mgc:lastBackup',
+  last(){try{return localStorage.getItem(BK.key)}catch(e){return null}},
+  mark(){try{localStorage.setItem(BK.key,new Date().toISOString())}catch(e){}BK.dot();if($('#bk-last'))$('#bk-last').innerHTML=BK.lastHTML()},
+  due(){if(!DIST)return false;const has=Object.values(S.months||{}).some(a=>a&&a.length)||(S.cfg.accounts||[]).length>1;if(!has)return false;const l=BK.last();return !l||(Date.now()-new Date(l))/864e5>30},
+  dot(){const d=$('#h-save-dot');if(d)d.hidden=!BK.due();const b=$('#h-save');if(b)b.title=BK.due()?'Sauvegarde conseillée : la dernière date de plus de 30 jours':'Sauvegarder mes données'},
+  lastHTML(){const l=BK.last();if(!l)return '<span class="warn">Aucune sauvegarde faite depuis cet appareil.</span>';const d=Math.floor((Date.now()-new Date(l))/864e5);return `Dernière sauvegarde : <b>${fdate(l.slice(0,10))}</b>${d>30?` <span class="warn">(il y a ${d} jours)</span>`:d?` (il y a ${d} jour${d>1?'s':''})`:' (aujourd’hui)'}`},
+  download(name,data){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);BK.mark();toast('Sauvegarde téléchargée : range-la en lieu sûr')}catch(e){offerFile(name,data)}},
+  canShare(){try{return !!(navigator.canShare&&navigator.canShare({files:[new File(['{}'],'t.json',{type:'application/json'})]}))}catch(e){return false}},
+  async share(){const f=new File([backupData()],backupName(),{type:'application/json'});try{await navigator.share({files:[f],title:'Sauvegarde Ma gestion du cashflow'});BK.mark();toast('Sauvegarde envoyée')}catch(e){if(e&&e.name==='AbortError')return;toast('Partage impossible : utilise « Télécharger »')}},
+  open(){const sh=DIST&&BK.canShare();
+    openModal('Sauvegarder mes données',`<div class="stack bk">
+      <p style="margin:0">${DIST?'Tes données sont enregistrées <b>uniquement dans ce navigateur, sur cet appareil</b>. Si tu effaces les données du navigateur, changes de téléphone ou perds l’appareil, elles disparaissent. Une sauvegarde régulière te permet de tout récupérer.':'Tes données sont enregistrées dans la base privée de cette page. Une copie de sauvegarde te protège en cas d’erreur de saisie ou de suppression, et te permet de passer sur la version installable.'}</p>
+      <p class="small" id="bk-last" style="margin:0">${BK.lastHTML()}</p>
+      <div class="toolbar" style="margin:0">${sh?'<button class="btn solid" data-act="bk-share">Envoyer vers… (Drive, Fichiers, e-mail)</button>':''}<button class="btn ${sh?'':'solid'}" data-act="export-json">Télécharger ma sauvegarde (.json)</button></div>
+      <div class="bkbox"><b>Où la ranger ?</b> Dans un endroit sûr, <b>en dehors de cet appareil</b> :
+        <ul><li>ton espace en ligne personnel : Google Drive, iCloud Drive, OneDrive ou Dropbox, dans un dossier « Sauvegardes cashflow » ;</li>
+        <li>ou envoie-la-toi par e-mail, ou copie-la sur une clé USB.</li></ul>
+        <span class="small muted">Le fichier contient toutes tes données financières, en clair : garde-le dans un espace privé, ne le partage pas. Conserve les 2 ou 3 dernières sauvegardes.</span></div>
+      <div class="bkbox"><b>Quand ?</b> Une fois par mois, au moment de ton PAYDAY, et avant de changer de téléphone ou de navigateur.${DIST?' Un point orange sur le bouton « Sauvegarder » te le rappelle après 30 jours.':''}</div>
+      <div class="bkbox"><b>Pour récupérer tes données</b> sur ce téléphone ou un autre appareil : ouvre l’appli, puis « Restaurer depuis un fichier » et choisis ta sauvegarde. Elle remplace les données présentes.
+        <div class="toolbar" style="margin:8px 0 0"><button class="btn sm ghost" data-act="import-json">Restaurer depuis un fichier…</button></div></div>
+      </div>`,'')}
+};
 function exportCSV(){const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';const nb=c=>c==null?'':(c/100).toFixed(2).replace('.',',');
   const rows=[['Date','Type','Statut','Catégorie','Compte','Compte destinataire','Montant','Montant net disponible','Retenues','Description','Commentaire','Bien','Contrat','Caractère','Statut déclaratif'].map(q).join(';')];
   for(const o of allOps().sort((a,b)=>a.date.localeCompare(b.date)))rows.push([fdate(o.date),o.kind==='exp'?'Dépense':o.kind==='inc'?'Recette':'Transfert',o.status,o.kind==='tr'?'':C.catName(o.catId),(C.acc(o.accountId)||{}).name,(C.acc(o.toAccountId)||{}).name,nb(o.amount),o.kind==='inc'?nb(C.net(o)):'',o.kind==='inc'?nb(C.retTotal(o)):'',o.desc,o.comment,(C.prop(o.propertyId)||{}).name,(S.cfg.contracts.find(c=>c.id===o.contractId)||{}).name,o.recur,o.declStatus?DECL[o.declStatus]:''].map(q).join(';'));
@@ -3236,6 +3269,7 @@ document.addEventListener('click',async e=>{
     case 'year':S.hist.year+=Number(t.dataset.d);render();break;
     case 'hist-toggle':S.histOpen=S.histOpen===false;try{localStorage.setItem('hist-open',S.histOpen?'1':'0')}catch(e){}render();break;
     case 'hist-reset':S.hist={from:null,to:null,kind:'',cat:'',acc:'',prop:'',status:'',q:'',year:S.hist.year};render();break;
+    case 'backup':BK.open();break;case 'bk-share':BK.share();break;
     case 'export-json':exportJSON();break;case 'export-csv':exportCSV();break;
     case 'import-json':$('#import-file').click();break;
     case 'do-import':doImport(modalState.importData);break;
@@ -3335,7 +3369,7 @@ function obOpen(first){const cn=carnetRead();const G=cn?carnetPlan(cn):null;cons
       ${gr.length?gr.map(([k,t,d])=>`<label class="check" style="align-items:flex-start"><input type="checkbox" data-ob="${k}" checked><span><b>${esc(t)}</b><br><span class="small muted">${d}</span></span></label>`).join(''):'<p class="small muted" style="margin:0">Ton carnet ne contient pas encore de montants à reprendre.</p>'}
       <p class="small muted" style="margin:0">Tout reste modifiable ensuite. Si tu réimportes plus tard, ces éléments sont mis à jour sans doublon.</p>`
       :`<p class="small muted" style="margin:0">Tu n’as pas encore rempli le carnet du livre. Ce n’est pas grave : commence avec une feuille vide, ou lis le livre et remplis le carnet, puis reviens dans Réglages › « Importer mon carnet ».</p>`}
-    <p class="small muted" style="margin:0">Tes données restent dans ce navigateur, sur cet appareil. Pense à exporter une sauvegarde chaque mois (Réglages › Sauvegarde).</p></div>`;
+    <p class="small muted" style="margin:0">Tes données restent dans ce navigateur, sur cet appareil. Pense à faire une sauvegarde chaque mois avec le bouton « Sauvegarder » en haut de l’écran.</p></div>`;
   openModal(first?'Ta feuille de départ':'Importer mon carnet',body,`${first&&window.CFShell?`<a class="btn ghost" style="text-decoration:none;color:inherit" href="${window.CFShell.livre}">Lire le livre d’abord</a>`:''}<span class="sp"></span><button class="btn solid" data-act="ob-go">${gr.length?'Créer ma feuille':'Commencer'}</button>`,{wide:true})}
 async function obApply(){const G=S.obPlan;const sel=new Set([...document.querySelectorAll('[data-ob]')].filter(e=>e.checked).map(e=>e.dataset.ob));const on=k=>sel.has(k);
   const name=val('ob-name').trim(),prof=val('ob-prof').trim();S.cfg.player.name=name;S.cfg.player.profession=prof;S.cfg.onboarded=true;
