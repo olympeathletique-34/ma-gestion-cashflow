@@ -299,6 +299,11 @@ table.year tr.tot td{font-weight:700}
 .perpill small{color:var(--muted);font-size:12px;white-space:nowrap}
 .perpill .car{color:var(--muted);font-size:12px}
 @media (max-width:420px){.perpill small{display:none}.perpill .pk-kind{display:none}}
+.tseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:2px;gap:2px;background:var(--soft)}
+.tseg button{border:0;background:none;padding:4px 10px;border-radius:999px;font:600 12px/1.2 var(--f-label);color:var(--muted);min-height:28px}
+.tseg button.on{background:var(--ink);color:var(--card)}
+.chtools{flex-wrap:wrap;gap:8px}.chartzoom{cursor:zoom-in}
+.linkpanel{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;text-decoration:none;color:inherit}.linkpanel b{grid-column:1}.linkpanel .small{grid-column:1}.linkpanel>span[aria-hidden]{grid-row:1/3;grid-column:2;font-size:22px;color:var(--muted)}
 .miniseg{display:flex;background:var(--card);border-radius:999px;padding:3px;box-shadow:var(--shadow);flex:none}
 .miniseg button{border:0;background:none;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;font-family:var(--f-label);font-weight:700;color:var(--muted)}
 .miniseg button.on{background:var(--hero);color:#fff}
@@ -807,9 +812,10 @@ function migrate(c){
   return c;
 }
 const MIG={dirty:false,linked:0};
+let COVM0='m';try{COVM0=localStorage.getItem('cov-mode')||'m'}catch(e){}
 
 /* ==================== État & stockage ==================== */
-const S={cfg:migrate(defaultConfig()),months:{},prices:{history:{},src:{}},db:null,mode:'loading',route:'feuille',
+const S={covMode:COVM0,covN:12,chartFull:null,cfg:migrate(defaultConfig()),months:{},prices:{history:{},src:{}},db:null,mode:'loading',route:'feuille',
   period:LS.get('period2',{mode:'month'}),pickY:null,
   hist:{from:null,to:null,kind:'',cat:'',acc:'',prop:'',status:'',q:'',year:new Date().getFullYear()},
   blur:LS.get('blur',false),quadOpen:LS.get('quadOpen',{}),modalRefresh:null,cfgLoaded:false,monthsLoaded:false};
@@ -1027,9 +1033,9 @@ function periodPicker(tab){
 }
 
 /* ==================== Rendu général ==================== */
-const ROUTES=[['feuille','Feuille Rat Race'],['bilan','Bilan complet'],['fasttrack','Fast Track'],['historique','Opérations'],['comptes','Comptes'],['biens','Immobilier'],['portefeuille','Placements'],['entreprises','Entreprises'],['sources','Autres revenus passifs'],['previsions','Prévisions'],['contrats','Contrats'],['urssaf','URSSAF'],['impots','Impôts & déclaration'],['memos','Mémos'],['reglages','Réglages']];
+const ROUTES=[['feuille','Feuille Rat Race'],['bilan','Bilan complet'],['fasttrack','Fast Track'],['historique','Opérations'],['comptes','Comptes'],['biens','Immobilier'],['portefeuille','Placements'],['entreprises','Entreprises'],['sources','Autres revenus passifs'],['previsions','Prévisions'],['graphiques','Graphiques'],['contrats','Contrats'],['urssaf','URSSAF'],['impots','Impôts & déclaration'],['memos','Mémos'],['reglages','Réglages']];
 /* Navigation en espaces : un onglet principal par espace, des sous-onglets quand l'espace en contient plusieurs. Le Bilan complet s'ouvre depuis la feuille. */
-const GROUPS=[{k:'feuille',l:'Feuille Rat Race',r:['feuille','bilan'],nosub:true},{k:'fasttrack',l:'Fast Track',r:['fasttrack']},{k:'quotidien',l:'Au quotidien',r:['comptes','historique','previsions']},{k:'contrats',l:'Contrats',r:['contrats']},{k:'patrimoine',l:'Patrimoine',r:['biens','portefeuille','entreprises','sources']},{k:'fiscal',l:'Impôts & URSSAF',r:['urssaf','impots']},{k:'outils',l:'Outils',r:['memos','reglages']}];
+const GROUPS=[{k:'feuille',l:'Feuille Rat Race',r:['feuille','bilan'],nosub:true},{k:'fasttrack',l:'Fast Track',r:['fasttrack']},{k:'quotidien',l:'Au quotidien',r:['comptes','historique','previsions','graphiques']},{k:'contrats',l:'Contrats',r:['contrats']},{k:'patrimoine',l:'Patrimoine',r:['biens','portefeuille','entreprises','sources']},{k:'fiscal',l:'Impôts & URSSAF',r:['urssaf','impots']},{k:'outils',l:'Outils',r:['memos','reglages']}];
 const groupOf=r=>GROUPS.find(g=>g.r.includes(r))||GROUPS[0];
 const routeLabel=k=>(ROUTES.find(r=>r[0]===k)||[k,k])[1];
 function route(){let h=(location.hash||'').slice(1);if(h==='fiscal'||h==='declaration'){S.impTab=h==='fiscal'?'fiscal':'decl';h='impots';try{history.replaceState(null,'','#impots')}catch(e){}}return ROUTES.some(r=>r[0]===h)?h:'feuille'}
@@ -1044,7 +1050,7 @@ function render(){
   {const nv=$('#tabs'),ac=nv.querySelector('[aria-current]');if(ac)nv.scrollLeft=Math.max(0,ac.offsetLeft-(nv.clientWidth-ac.offsetWidth)/2)}
   const sub=$('#subtabs');sub.hidden=grp.nosub||grp.r.length<2;sub.innerHTML=sub.hidden?'':grp.r.map(k=>`<a href="#${k}" ${S.route===k?'aria-current="page"':''}>${routeLabel(k)}</a>`).join('');
   const v=$('#view');
-  const views={feuille:vFeuille,bilan:vBilan,sources:vSources,entreprises:vEntreprises,fasttrack:vGuide,historique:vHist,comptes:vComptes,biens:vBiens,portefeuille:vPortfolio,previsions:vPrev,contrats:vContrats,urssaf:vUrssaf,impots:vImpots,memos:vMemos,reglages:vReglages};
+  const views={feuille:vFeuille,bilan:vBilan,sources:vSources,entreprises:vEntreprises,fasttrack:vGuide,historique:vHist,graphiques:vGraphiques,comptes:vComptes,biens:vBiens,portefeuille:vPortfolio,previsions:vPrev,contrats:vContrats,urssaf:vUrssaf,impots:vImpots,memos:vMemos,reglages:vReglages};
   try{v.innerHTML=statusLine()+views[S.route]()}catch(e){console.error(e);v.innerHTML='<p class="err">Erreur d’affichage : '+esc(e.message)+'</p>'}
   if(S.modalRefresh)S.modalRefresh();
 }
@@ -1152,13 +1158,36 @@ function vFeuille(){
   ${miniCoverage()}`;
   return h;
 }
-function miniCoverage(){
-  const cur=mk(todayISO());const ms=[];for(let i=12;i>=1;i--)ms.push(addMonths(cur,-i));
-  const first=C.firstMonth();if(!first)return '';
-  const data=ms.map(m=>{const a=C.monthAgg(m);return {m,pas:a.pas,exp:a.exp,has:m>=first}});
-  if(!data.some(d=>d.has&&(d.exp||d.pas)))return '';
-  return `<div class="panel"><h3>Évolution sur les 12 derniers mois complets</h3>${lineChart(data.map(d=>mLabel(d.m).split(' ')[0]),[{name:'Dépenses de référence',vals:data.map(d=>d.has?d.exp:null),color:'var(--exp)'},{name:'Revenus passifs nets',vals:data.map(d=>d.has?d.pas:null),color:'var(--inc)'}],180)}</div>`;
-}
+function miniCoverage(){if(!C.firstMonth())return '';const D=covData(12);if(!D)return '';
+  return chartPanel('cov','Revenus passifs et dépenses',(W,H,full)=>covChart(covData(full?S.covN:12),W,H),{H:200,tools:covTools,foot:covFoot})}
+/* Revenus passifs nets face aux dépenses de référence : vue mensuelle (N derniers mois complets) ou annuelle (par année civile). */
+function covData(n){const first=C.firstMonth();if(!first)return null;const cur=mk(todayISO());
+  if((S.covMode||'m')==='y'){const y0=Number(first.slice(0,4)),y1=Number(cur.slice(0,4));const ys=[];
+    for(let y=y0;y<=y1;y++){let pas=0,exp=0,k=0;for(let i=1;i<=12;i++){const m=y+'-'+String(i).padStart(2,'0');if(m<first||m>cur)continue;const a=C.monthAgg(m);pas+=a.pas;exp+=a.exp;k++}if(k)ys.push({l:String(y)+(y===y1?' *':''),pas,exp,k})}
+    while(ys.length>1&&!ys[0].pas&&!ys[0].exp)ys.shift();
+    return ys.some(d=>d.pas||d.exp)?{mode:'y',rows:ys}:null}
+  const ms=[];const N=n==='all'?Math.max(1,(Number(cur.slice(0,4))-Number(first.slice(0,4)))*12+Number(cur.slice(5))-Number(first.slice(5,7))):Number(n)||12;
+  for(let i=N;i>=1;i--)ms.push(addMonths(cur,-i));
+  const rows=ms.map(m=>{const a=C.monthAgg(m);const has=m>=first;return {l:mLabel(m).split(' ')[0]+(N>12?' '+m.slice(2,4):''),pas:has?a.pas:null,exp:has?a.exp:null}});
+  if(n==='all')while(rows.length>12&&!rows[0].pas&&!rows[0].exp)rows.shift();
+  return rows.some(d=>d.pas||d.exp)?{mode:'m',rows}:null}
+function covChart(D,W,H){if(!D)return '<p class="empty">Pas encore d’opérations sur cette période.</p>';
+  if(D.mode==='y')return barChart(D.rows.map(d=>d.l),[{name:'Revenus passifs nets',vals:D.rows.map(d=>d.pas),color:'var(--inc)'},{name:'Dépenses de référence',vals:D.rows.map(d=>d.exp),color:'var(--exp)'}],H,W);
+  return lineChart(D.rows.map(d=>d.l),[{name:'Dépenses de référence',vals:D.rows.map(d=>d.exp),color:'var(--exp)'},{name:'Revenus passifs nets',vals:D.rows.map(d=>d.pas),color:'var(--inc)'}],H,axisFmt,W)}
+function covTools(full){const md=S.covMode||'m';const seg=(act,cur,opts)=>`<div class="tseg" role="group">${opts.map(([v,l])=>`<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${String(cur)===String(v)}" class="${String(cur)===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+  return seg('cov-mode',md,[['m','Mensuel'],['y','Annuel']])+(full&&md==='m'?seg('cov-n',S.covN||12,[[12,'12 mois'],[24,'24 mois'],[36,'36 mois'],['all','Tout']]):'')}
+function covFoot(){return (S.covMode||'m')==='y'?`<p class="small muted" style="margin:6px 0 0">Totaux par année civile. * année en cours, jusqu’à ce jour.</p>`:''}
+/* Graphiques agrandissables : chaque panneau enregistre sa fonction de rendu, rejouée en plein écran à la taille de l’écran. */
+const CHARTS={};
+/* Largeur de rendu proche de la largeur réelle du panneau : textes lisibles sur téléphone, graphique pas trop haut sur grand écran. */
+function chartW(){const w=Math.min(window.innerWidth,1180)-(window.innerWidth<700?48:96);return Math.max(300,Math.min(1080,w))}
+function chartPanel(key,title,render,o={}){CHARTS[key]={title,render,tools:o.tools,foot:o.foot};
+  return `<div class="panel"><div class="toolbar chtools" style="margin:0 0 6px"><h3 style="margin:0">${esc(title)}</h3><span class="sp"></span>${o.tools?o.tools(false):''}<button class="btn sm ghost" data-act="chart-full" data-c="${key}" aria-label="Agrandir le graphique en plein écran" title="Plein écran">⤢</button></div><div class="chartzoom" data-act="chart-full" data-c="${key}" title="Agrandir">${render(chartW(),o.H||200)}</div>${o.foot?o.foot():''}</div>`}
+function chartFull(key){const c=CHARTS[key];if(!c)return;S.chartFull=key;
+  const W=Math.max(300,Math.min(window.innerWidth-24,1400)),H=Math.max(260,window.innerHeight-(window.innerWidth<700?250:210));
+  openModal(c.title,`${c.tools?`<div class="toolbar chtools" style="margin:0 0 8px">${c.tools(true)}</div>`:''}${c.render(W-32,H,true)}${c.foot?c.foot():''}`,'',{wide:true,onClose:()=>{S.chartFull=null}});
+  const m=$('.modal');if(m)m.classList.add('fullchart')}
+window.addEventListener('resize',()=>{if(S.chartFull&&$('.modal.fullchart'))chartFull(S.chartFull)});
 function bilanCards(nw){
   const A=S.cfg.assets,D=S.cfg.debts;
   const ACATS=['Épargne','Bourse et fonds','Autres actifs financiers mobiliers','Parts d’entreprises ou actifs professionnels','Autres actifs'];
@@ -1196,8 +1225,8 @@ function lineChart(labels,series,H=200,fmt=axisFmt,W=640){
     g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2"${s.dash?' stroke-dasharray="5 4" opacity=".7"':''}/>`;const li=s.vals.map((v,i)=>v==null?-1:i).filter(i=>i>=0).pop();if(li!=null&&li>=0)g+=`<circle cx="${x(li)}" cy="${y(s.vals[li])}" r="3.5" fill="${s.color}"/>`}
   return `<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div><svg class="chart money" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map(s=>s.name).join(', '))}">${g}</svg>`;
 }
-function barChart(labels,series,H=220){
-  const W=640,pl=56,pr=12,pt=10,pb=24;const all=series.flatMap(s=>s.vals);const mx=niceMax(Math.max(...all,0));
+function barChart(labels,series,H=220,W=640){
+  const pl=56,pr=12,pt=10,pb=24;const all=series.flatMap(s=>s.vals);const mx=niceMax(Math.max(...all,0));
   const n=labels.length,gw=(W-pl-pr)/n,bw=Math.max(3,(gw*0.72)/series.length);const y=v=>pt+(H-pt-pb)*(1-v/mx);
   let g='';for(let k=0;k<=4;k++){const v=mx*k/4;g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${axisFmt(v)}</text>`}
   labels.forEach((l,i)=>{const x0=pl+i*gw+gw*0.14;series.forEach((s,j)=>{const v=s.vals[i]||0;g+=`<rect x="${(x0+j*bw).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(H-pb-y(v)).toFixed(1)}" fill="${s.color}"><title>${esc(l)} · ${esc(s.name)} : ${money(v)}</title></rect>`});if(!(n>8&&i%2))g+=`<text x="${pl+i*gw+gw/2}" y="${H-6}" text-anchor="middle">${esc(l)}</text>`});
@@ -1433,9 +1462,10 @@ function vHist(){
   </div><div class="toolbar"><button class="btn ghost sm" data-act="hist-reset">Effacer les filtres</button><span class="sp"></span><span class="small muted">${ops.length} opération${ops.length>1?'s':''}${ops.length>300?' (300 premières affichées)':''}</span></div></div>`;
   const open=S.histOpen!==false;
   h+=`<div class="panel"><div class="toolbar" style="margin:0 0 ${open?'6px':'0'}"><h3 style="margin:0">Opérations</h3><span class="sp"></span><button class="btn sm" data-act="hist-toggle" aria-expanded="${open}">${open?'▴ Réduire':'▾ Afficher les '+ops.length}</button></div>${open?(shown.length?opList(shown):'<p class="empty">Aucune opération ne correspond. Ajoute une dépense ou une recette avec les boutons en bas.</p>')+(shown.length>8?'<p style="margin:8px 0 0;text-align:center"><button class="btn sm ghost" data-act="hist-toggle">▴ Réduire la liste pour voir les graphiques</button></p>':''):''}</div>`;
-  h+=analyses();
+  h+=`<a class="panel linkpanel" href="#graphiques"><b>Graphiques</b><span class="small muted">Recettes et dépenses, revenus passifs, cashflow, patrimoine et vue annuelle</span><span aria-hidden="true">›</span></a>`;
   return h;
 }
+function vGraphiques(){return analyses()}
 function opLine(o){
   const isT=o.kind==='tr';const sign=o.kind==='exp'?'-':o.kind==='inc'?'+':'';const cls=o.kind==='exp'?'neg':o.kind==='inc'?'pos':'';
   const a=C.acc(o.accountId),b=C.acc(o.toAccountId);
@@ -1450,16 +1480,17 @@ function opList(ops){let h='<div class="oplist">',d=null;for(const o of ops){if(
 function analyses(){
   const cur=mk(todayISO());const ms=[];for(let i=11;i>=0;i--)ms.push(addMonths(cur,-i));
   const ag=ms.map(m=>C.monthAgg(m));const labs=ms.map(m=>mLabel(m).split(' ')[0]);
-  let h=`<div class="panel"><h3>Recettes et dépenses, 12 derniers mois</h3>${barChart(labs,[{name:'Recettes',vals:ag.map(a=>a.inc),color:'var(--pos)'},{name:'Dépenses',vals:ag.map(a=>a.out),color:'var(--neg)'}])}</div>`;
-  h+=`<div class="panel"><h3>Cashflow mensuel et revenus passifs</h3>${lineChart(labs,[{name:'Cashflow mensuel',vals:ag.map(a=>a.cash),color:'var(--ink)'},{name:'Revenus passifs nets',vals:ag.map(a=>a.pas),color:'var(--pos)'}])}</div>`;
-  h+=`<div class="panel"><h3>Progression vers la sortie de la Rat Race</h3>${lineChart(labs,[{name:'Couverture des dépenses par les revenus passifs',vals:ag.map(a=>a.exp?Math.round(a.pas/a.exp*100):null),color:'var(--pos)'}],200,v=>Math.round(v)+' %')}</div>`;
+  let h=chartPanel('an-rd','Recettes et dépenses, 12 derniers mois',(W,H)=>barChart(labs,[{name:'Recettes',vals:ag.map(a=>a.inc),color:'var(--pos)'},{name:'Dépenses',vals:ag.map(a=>a.out),color:'var(--neg)'}],H,W),{H:220});
+  h+=miniCoverage();
+  h+=chartPanel('an-cf','Cashflow mensuel et revenus passifs',(W,H)=>lineChart(labs,[{name:'Cashflow mensuel',vals:ag.map(a=>a.cash),color:'var(--ink)'},{name:'Revenus passifs nets',vals:ag.map(a=>a.pas),color:'var(--pos)'}],H,axisFmt,W));
+  h+=chartPanel('an-cov','Progression vers la sortie de la Rat Race',(W,H)=>lineChart(labs,[{name:'Couverture des dépenses par les revenus passifs',vals:ag.map(a=>a.exp?Math.round(a.pas/a.exp*100):null),color:'var(--pos)'}],H,v=>Math.round(v)+' %',W));
   /* Répartition des dépenses (12 mois) et moyennes */
   const from=ms[0]+'-01',to=cur+'-'+lastDay(cur);const st=C.period(from,to);
   const exps=S.cfg.cats.filter(c=>c.kind==='exp'&&!c.parent).map(c=>[c,st.byCat[c.id]||0]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
   const mx=exps.length?exps[0][1]:1;const nM=C.firstMonth()?Math.max(1,ms.filter(m=>m>=C.firstMonth()).length):1;
   h+=`<div class="panel"><h3>Répartition des dépenses (12 mois) et moyenne mensuelle</h3>${exps.length?exps.map(([c,v])=>`<div class="hbar"><span class="n">${esc(c.name)}</span><span><span class="b" style="display:block;width:${(v/mx*100).toFixed(1)}%"></span></span><span class="num money">${money(v)} <span class="muted">· ${money(Math.round(v/nM))}/mois</span></span></div>`).join(''):'<p class="empty">Pas encore de dépenses.</p>'}</div>`;
   /* Patrimoine */
-  const nwh=S.cfg.nwHistory||[];if(nwh.length>1)h+=`<div class="panel"><h3>Évolution du patrimoine net</h3>${lineChart(nwh.map(x=>mLabel(x.m)),[{name:'Patrimoine net',vals:nwh.map(x=>x.assets-x.debts),color:'var(--ink)'}])}</div>`;
+  const nwh=S.cfg.nwHistory||[];if(nwh.length>1)h+=chartPanel('an-nw','Évolution du patrimoine net',(W,H)=>lineChart(nwh.map(x=>mLabel(x.m)),[{name:'Patrimoine net',vals:nwh.map(x=>x.assets-x.debts),color:'var(--ink)'}],H,axisFmt,W));
   /* Vue annuelle */
   const y=S.hist.year;const yms=[];for(let i=1;i<=12;i++)yms.push(y+'-'+String(i).padStart(2,'0'));
   const per=yms.map(m=>C.period(m+'-01',m+'-'+lastDay(m)));
@@ -2778,7 +2809,7 @@ function openModal(title,body,footer,opts={}){
 function closeModal(force){
   if(!modalState)return;
   if(modalState.dirty&&!force){$('#dirty-slot').innerHTML=`<div class="dirty-bar"><span>Tu as des modifications non enregistrées.</span><span style="flex:1"></span><button class="btn sm" data-act="dirty-stay">Continuer la saisie</button><button class="btn sm danger" data-act="dirty-leave">Abandonner</button></div>`;return}
-  $('#modal-root').innerHTML='';modalState=null;S.modalRefresh=null;
+  const oc=modalState.onClose;$('#modal-root').innerHTML='';modalState=null;S.modalRefresh=null;if(oc)try{oc()}catch(e){}
 }
 function toast(msg){const r=$('#toast-root');r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>{r.innerHTML=''},2600)}
 function armDelete(btn,fn){if(btn.classList.contains('armed')){fn();return}btn.classList.add('armed');btn.textContent='Confirmer la suppression';setTimeout(()=>{if(btn.isConnected){btn.classList.remove('armed');btn.textContent='Supprimer'}},4000)}
@@ -3130,6 +3161,9 @@ document.addEventListener('click',async e=>{
     case 'acc-tab':S.accTab=t.dataset.v;S.modalRefresh&&S.modalRefresh();break;
     case 'acc-sel':{const k=t.dataset.k;S.accSel=S.accSel===k?null:k;S.modalRefresh&&S.modalRefresh();const dd=$('.accdet');if(dd&&S.accSel)dd.scrollIntoView({block:'nearest',behavior:'smooth'});break}
     case 'ca-full':caFull();break;
+    case 'chart-full':chartFull(t.dataset.c);break;
+    case 'cov-mode':S.covMode=t.dataset.v;try{localStorage.setItem('cov-mode',S.covMode)}catch(e){}render();if(S.chartFull)chartFull(S.chartFull);break;
+    case 'cov-n':S.covN=t.dataset.v==='all'?'all':Number(t.dataset.v);chartFull('cov');break;
     case 'ca-months':planCfg().chartMonths=Number(t.dataset.v);saveCfg();break;
     case 'ca-pick':{const p=planCfg();const cur=p.chartSel&&p.chartSel.length?p.chartSel:p.activities.map(a=>a.id);
       openModal('Produits à afficher',`<p class="small muted" style="margin:0">Coche les activités à suivre sur le graphique.</p><div class="stack" style="gap:8px">${p.activities.map(a=>`<label class="check" style="font-size:15px"><input type="checkbox" class="ca-chk" value="${a.id}" ${cur.includes(a.id)?'checked':''}> ${esc(a.name)}${a.keyword?'':' <span class="badge warn">mot-clé à compléter</span>'}</label>`).join('')}</div>`,
