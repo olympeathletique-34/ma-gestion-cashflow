@@ -309,6 +309,7 @@ h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom
 .vsearch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 4px}.vs-in{flex:1 1 220px;display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:0 14px;box-shadow:var(--shadow);color:var(--muted)}
 .vs-in input{border:0;background:none;box-shadow:none;padding:9px 0;min-height:40px;flex:1;min-width:0;font-size:15px;color:var(--ink);outline:none}.vs-in:focus-within{outline:2px solid var(--focus,var(--accent));outline-offset:1px}
 .pf-split{margin:-4px 0 6px;opacity:.9}
+.actfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;margin-top:6px}.actfoot small{flex:1 1 200px;min-width:0}
 .tseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:2px;gap:2px;background:var(--soft)}
 .tseg button{border:0;background:none;padding:4px 10px;border-radius:999px;font:600 12px/1.2 var(--f-label);color:var(--muted);min-height:28px}
 .tseg button.on{background:var(--ink);color:var(--card)}
@@ -1300,9 +1301,14 @@ const ACT={
   /* Gain net d’une unité vendue : prix − cotisations calculées par la catégorie − frais directs. */
   unit(a){if(a.price==null)return null;const ar=a.catId?C.autoRet(a.catId,a.price):null;const t=a.catId?C.taxOf(a.catId):null;const ret=ar&&(!t||t.mode!=='net')?Object.values(ar).reduce((s,v)=>s+v,0):0;return {gross:a.price,ret,cost:a.cost||0,net:a.price-ret-(a.cost||0)}},
   hourly(a){const u=ACT.unit(a);return u&&a.hours?Math.round(u.net/a.hours):null},
-  realized(a,from,to){let n=0,amt=0,ca=0;const kw=(a.keyword||'').trim().toLowerCase();if(!a.catId)return null;
-    for(const o of C.range(from,to)){if(o.kind!=='inc'||!C.isReal(o))continue;const r=C.root(o.catId);if(o.catId!==a.catId&&(!r||r.id!==a.catId))continue;
-      if(kw&&!((o.desc||'')+' '+(o.recName||'')+' '+(o.comment||'')).toLowerCase().includes(kw))continue;n++;amt+=C.net(o);ca+=o.amount}return {n,amt,ca}}
+  /* Ventes comptées : recettes enregistrées avec « + 1 vente » sur cette activité, ou recettes de sa catégorie dont le libellé contient le mot-clé (à défaut, le nom de l’activité). */
+  kw(a){return FOLD.norm((a.keyword||'').trim()||(a.name||'').trim()).trim()},
+  realized(a,from,to){let n=0,amt=0,ca=0;const kw=ACT.kw(a);if(!a.catId)return null;
+    for(const o of C.range(from,to)){if(o.kind!=='inc'||!C.isReal(o))continue;
+      if(o.actId){if(o.actId!==a.id)continue}
+      else{const r=C.root(o.catId);if(o.catId!==a.catId&&(!r||r.id!==a.catId))continue;
+        if(!kw||!FOLD.norm((o.desc||'')+' '+(o.recName||'')+' '+(o.comment||'')+' '+(o.activity||'')).includes(kw))continue}
+      n++;amt+=C.net(o);ca+=o.amount}return {n,amt,ca}}
 };
 function planGoal(){const p=planCfg(),rr=C.rr();const cur=mk(todayISO()),from=cur+'-01',to=cur+'-'+lastDay(cur);
   if(p.goalMode==='custom')return {v:p.goalCustom||0,label:'Objectif personnalisé de cashflow',done:C.period(from,to).cashflow,doneLabel:'Cashflow déjà fait ce mois',doneSub:'recettes − dépenses'};
@@ -1332,7 +1338,8 @@ function vCash(){
   h+=`<div class="panel"><div class="toolbar" style="margin:0 0 6px"><h3 style="margin:0">Tes activités</h3><span class="sp"></span><button class="btn sm" data-act="act-edit">+ Ajouter</button></div>
     ${acts.map(a=>{const u=ACT.unit(a),hr=ACT.hourly(a),rz=ACT.realized(a,mFrom,mTo);const tg=a.target||0;
       return `<div class="actrow"><button class="am" data-act="act-edit" data-id="${a.id}"><b>${esc(a.name)}</b><small>${esc(ACT_TYPES[a.type]||'')} · ${a.price==null?'<span class="warn">prix à compléter</span>':money(a.price)+' / '+esc(a.unit||'unité')}${u?` · net <b class="money">${money(u.net)}</b>`:''}${hr!=null?` · <b class="money">${money(hr)}</b>/h net`:''}</small></button>
-        ${rz?`<div class="actprog"><span class="small">Ce mois : <b>${rz.n}</b>${tg?' / '+tg:''} · <b class="money pos">${money(rz.amt)}</b></span><span class="bar"><i style="width:${tg?Math.min(100,rz.n/tg*100):0}%"></i></span></div>`:''}</div>`}).join('')}
+        ${rz?`<div class="actprog"><span class="small">Ce mois : <b>${rz.n}</b>${tg?' / '+tg:''} ${esc(rz.n>1?(a.unitPlural||(a.unit||'vente')+'s').toLowerCase():(a.unit||'vente'))} · <b class="money pos">${money(rz.amt)}</b></span><span class="bar"><i style="width:${tg?Math.min(100,rz.n/tg*100):0}%"></i></span></div>
+        <div class="actfoot"><small class="muted">Comptées : recettes « ${esc(C.catName(a.catId))} » dont le libellé contient « ${esc((a.keyword||'').trim()||a.name)} »</small><button class="btn sm solid" data-act="act-sale" data-id="${a.id}">+ 1 ${esc(a.unit||'vente')}</button></div>`:`<div class="actfoot"><small class="warn">Choisis une catégorie de recette pour suivre les ventes.</small></div>`}</div>`}).join('')}
     ${(()=>{const have=new Set(acts.map(x=>(x.name||'').trim().toLowerCase()));const sug=ACT_SUGG.filter(n=>!have.has(n.toLowerCase()));
       const chips=`<div class="chips" style="margin-bottom:8px">${sug.map(n=>`<button class="chip" data-act="act-edit" data-name="${esc(n)}">+ ${esc(n)}</button>`).join('')}<button class="chip" data-act="act-edit">+ Autre activité</button></div>`;
       return acts.length?`<p class="small muted" style="margin:12px 0 6px">Ajouter une activité :</p>${chips}`
@@ -1401,7 +1408,7 @@ function actForm(id,name){
     {k:'hours',l:'Temps passé par unité (heures, préparation et trajet compris)',t:'number',h:'Sert à calculer ton taux horaire réel.'},
     {k:'cost',l:'Frais directs par unité',t:'money',h:'Déplacement, matériel, commission de plateforme…'},
     {k:'current',l:'Volume actuel par mois',t:'number'},{k:'target',l:'Objectif par mois',t:'number'},
-    {k:'keyword',l:'Mot-clé pour retrouver les ventes dans tes recettes',ph:'ex. stage, Zone 4E',h:'Les recettes de la catégorie contenant ce mot sont comptées dans « Ce mois ».'},{k:'notes',l:'Notes',t:'area'}],a,(o)=>{
+    {k:'keyword',l:'Mot-clé pour retrouver les ventes dans tes recettes',ph:'ex. stage, Zone 4E',h:'Sont comptées dans « Ce mois » les recettes de la catégorie dont le libellé contient ce mot (à défaut, le nom de l’activité), et celles ajoutées avec le bouton « + 1 vente ».'},{k:'notes',l:'Notes',t:'area'}],a,(o)=>{
       for(const k of ['hours','current','target'])if(o[k]!=null&&o[k]<0){$('#cf-err').textContent='Les nombres doivent être positifs.';return false}
       Object.assign(a,o);if(!id)p.activities.push(a);if(S.simVol)delete S.simVol[a.id];saveCfg();toast('Activité enregistrée')},
     {onDelete:id?()=>{p.activities=p.activities.filter(x=>x.id!==id);saveCfg()}:null});
@@ -2900,8 +2907,8 @@ function opForm(kind,op,preset={}){
   if(preset.duplicate){o.id=uid();o.date=todayISO();delete o.createdAt}
   const recent=LS.get('recent-'+kind,[]).filter(id=>C.cat(id));
   const lastAcc=LS.get('lastacc-'+kind,null);
-  const d={id:o.id||uid(),kind,amount:o.amount??null,date:o.date||preset.date||opDefDate(),catId:o.catId||preset.catId||recent[0]||'',accountId:o.accountId||preset.accountId||lastAcc||(S.cfg.accounts[0]||{}).id||'',toAccountId:o.toAccountId||'',
-    desc:o.desc||'',comment:o.comment||'',status:o.status||(kind==='exp'?'paye':kind==='inc'?'encaisse':'paye'),recur:o.recur||'courant',propertyId:o.propertyId||preset.propertyId||'',contractId:o.contractId||'',activity:o.activity||'',
+  const d={id:o.id||uid(),kind,amount:o.amount??preset.amount??null,actId:o.actId||preset.actId||'',date:o.date||preset.date||opDefDate(),catId:o.catId||preset.catId||recent[0]||'',accountId:o.accountId||preset.accountId||lastAcc||(S.cfg.accounts[0]||{}).id||'',toAccountId:o.toAccountId||'',
+    desc:o.desc||preset.desc||'',comment:o.comment||'',status:o.status||(kind==='exp'?'paye':kind==='inc'?'encaisse':'paye'),recur:o.recur||'courant',propertyId:o.propertyId||preset.propertyId||'',contractId:o.contractId||'',activity:o.activity||'',
     amountType:o.amountType||(kind==='inc'&&C.taxOf(o.catId||preset.catId||recent[0])&&C.taxOf(o.catId||preset.catId||recent[0]).mode!=='net'?'brut':'net'),retMode:o.retMode||'a_payer',retenues:o.retenues||{},declStatus:o.declStatus||'a_verifier',origin:o.origin||'',recurrenceId:o.recurrenceId||null,taxDeduc:!!o.taxDeduc,taxRate:o.taxRate||66,...(o.urssafFor?{urssafFor:o.urssafFor}:{}),createdAt:o.createdAt||new Date().toISOString()};
   const title=kind==='exp'?(isNew?'Ajouter une dépense':'Modifier la dépense'):kind==='inc'?(isNew?'Ajouter une recette':'Modifier la recette'):(isNew?'Transfert entre mes comptes':'Modifier le transfert');
   let b=`<div class="amount-wrap"><input class="amount-in num" id="op-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${esc(cIn(d.amount))}" aria-label="Montant en euros"></div>`;
@@ -3228,6 +3235,7 @@ document.addEventListener('click',async e=>{
     case 'dirty-leave':closeModal(true);break;
     case 'new-exp':opForm('exp');break;
     case 'new-inc':opForm('inc');break;
+    case 'act-sale':{const a=planCfg().activities.find(x=>x.id===id);if(a)opForm('inc',null,{catId:a.catId,amount:a.price??null,desc:(a.keyword||'').trim()||('Vente '+a.name),actId:a.id,date:todayISO()});break}
     case 'new-tr':opForm('tr');break;
     case 'pick-cat':{const s=$('#op-cat');s.value=id;$$('#op-recent .chip').forEach(c=>c.classList.toggle('on',c.dataset.id===id));s.dispatchEvent(new Event('change',{bubbles:true}));break}
     case 'op-save':saveOpForm();break;
