@@ -1936,7 +1936,7 @@ function vPortfolio(){
       <div class="hstat"><div class="k">Lignes</div><div class="v num">${ps.length}</div><small>${ps.filter(p=>p.kind==='crypto').length} crypto</small></div></div></section>
   <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?`<button class="btn sm solid" data-act="pf-bulk">↻ Mettre à jour les cours</button>`:`<button class="btn sm" data-act="pf-bulk">Saisir / via une IA</button>`}${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
   ${S.pfPending?'<p class="small muted" style="margin:0 2px 8px">Claude récupère les cours sur le web ; ils s’afficheront ici automatiquement, en général en 2 à 5 minutes.</p>':''}`;
-  if(!ps.length)return h+`<div class="panel"><p class="empty">Ajoute ta première ligne : ISIN (ex. FR0000120271) ou code crypto (ex. BTC), date d’achat, quantité et prix unitaire payé.</p></div>`;
+  if(!ps.length)return h+pfManual()+`<div class="panel"><p class="empty">Ajoute ta première ligne : ISIN (ex. FR0000120271) ou code crypto (ex. BTC), date d’achat, quantité et prix unitaire payé.</p></div>`;
   h+=`<div class="panel"><h3>Sous-totaux par type</h3>${pfSummaryTable()}<p class="small muted" style="margin:6px 0 0">Investi = prix d’achat + frais. Gain ou perte latents, au dernier cours relevé.</p></div>`;
   /* Évolution */
   h+=`<div class="panel"><div class="toolbar" style="margin:0 0 6px"><h3 style="margin:0">Évolution de la valeur</h3><span class="sp"></span><button class="btn sm" data-act="pf-full" aria-label="Afficher le graphique en plein écran">⤢ Plein écran</button></div>${pfEvo(640,210)}
@@ -1953,8 +1953,16 @@ function vPortfolio(){
   for(const gr of GT){const pl=gr.v-gr.c;const lines=gr.ps.slice().sort((a,b)=>(PFL.value(b)||0)-(PFL.value(a)||0));
     h+=`<div class="panel pfgroup" style="--tone:${gr.col}"><div class="pfgh"><span class="dot"></span><h3 style="margin:0">${esc(gr.label)}</h3><span class="sp"></span><span class="pfv"><b class="money">${eurC(gr.v)}</b><small class="money ${pl>=0?'pos':'neg'}">${pl>=0?'+':''}${eurC(pl)}${gr.c?` (${(pl/gr.c*100).toFixed(1).replace('.',',')} %)`:''}</small></span></div>
       <p class="small muted" style="margin:2px 0 4px">${lines.length} ligne${lines.length>1?'s':''} · investi ${eurC(gr.c)} · ${sum?Math.round(gr.v/sum*100):0} % du portefeuille</p>${lines.map(line).join('')}</div>`}
-  return h;
+  return h+pfManual();
 }
+/* Placements suivis par leur seule valeur (PEA, fonds, assurance-vie sans détail des lignes) : enregistrés dans le Bilan, affichés aussi ici. */
+const PF_MCATS=['Épargne','Bourse et fonds','Autres actifs financiers mobiliers'];
+function pfManual(){const it=S.cfg.assets.filter(x=>PF_MCATS.includes(x.cat));const D=todayISO();
+  const tot=it.reduce((t,x)=>t+(C.valAt(x,'value',D)||0),0);
+  return `<div class="panel"><div class="toolbar" style="margin:0 0 6px"><h3 style="margin:0">Placements suivis par leur valeur</h3><span class="sp"></span>${it.length?`<b class="num">${money(tot)}</b>`:''}</div>
+    <p class="small muted" style="margin:0 0 8px">PEA, fonds, assurance-vie, livrets… dont tu ne suis que la valeur totale. Mets-la à jour à chaque relevé. Ils comptent dans ton Bilan complet.</p>
+    ${it.length?`<div class="list">${it.map(x=>`<button class="row" data-act="edit-asset" data-id="${x.id}"><span class="lbl">${esc(x.name)}<small>${esc(x.cat)}${x.date?' · valeur au '+fdate(x.date):''}</small></span><span class="amt">${money(C.valAt(x,'value',D)||0)}</span><span class="chev">›</span></button>`).join('')}</div>`:''}
+    <p style="margin:10px 0 0"><button class="btn sm" data-act="new-asset">+ Placement suivi par sa valeur</button></p></div>`}
 function pfForm(id,kind){
   const ps=pfCfg().positions;const p=id?ps.find(x=>x.id===id):{id:uid(),kind:kind||'titre',lots:[]};const isC=p.kind==='crypto';
   const fields=[{k:'name',l:isC?'Nom (facultatif)':'Nom de la valeur ou de l’ETF',ph:isC?'ex. Bitcoin':'ex. Amundi MSCI World'}];
