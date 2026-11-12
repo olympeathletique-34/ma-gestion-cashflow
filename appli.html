@@ -306,6 +306,12 @@ table.year tr.tot td{font-weight:700}
 .fold-b:hover{background:var(--soft);color:var(--ink)}.fold-b svg{transition:transform .2s}.is-folded .fold-b svg,.is-folded.fold-b svg{transform:rotate(-90deg)}
 h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom:14px}.panel.is-folded:not(.q-open)>.fold-h{margin-bottom:0}
 .q-hide,.f-hide{display:none!important}
+.card>.ch.fold-h{align-items:center;padding-right:50px}.cards:has(.card.is-folded){align-items:start}.card.is-folded:not(.q-open)>.ch{padding-bottom:14px}
+.fold-sum{display:none;margin-left:auto;font-weight:700;font-size:15px;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.is-folded:not(.q-open)>.fold-h>.fold-sum:not(:empty){display:inline-block}
+.fold-sum.pos{color:var(--pos);background:color-mix(in srgb,var(--pos) 14%,transparent)}
+.fold-sum.neg{color:color-mix(in srgb,var(--neg) 75%,var(--card));background:color-mix(in srgb,var(--neg) 12%,transparent)}
+.card>.fold-h .fold-b{right:6px}
 .vsearch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 4px}.vs-in{flex:1 1 220px;display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:0 14px;box-shadow:var(--shadow);color:var(--muted)}
 .vs-in input{border:0;background:none;box-shadow:none;padding:9px 0;min-height:40px;flex:1;min-width:0;font-size:15px;color:var(--ink);outline:none}.vs-in:focus-within{outline:2px solid var(--focus,var(--accent));outline-offset:1px}
 .pf-split{margin:-4px 0 6px;opacity:.9}
@@ -1208,6 +1214,9 @@ const FOLD={q:{},
     v.querySelectorAll('.panel').forEach(p=>{if(p.classList.contains('linkpanel')||p.closest('.modal'))return;const f=p.firstElementChild;if(!f)return;
       const t=/^H[23]$/.test(f.tagName)?f:(f.querySelector&&f.querySelector(':scope > h2, :scope > h3'));if(!t)return;
       out.push({el:p,head:f,title:t,body:[...p.children].filter(c=>c!==f)})});
+    v.querySelectorAll('.cards > .card').forEach(c=>{const f=c.firstElementChild;const t=f&&f.classList.contains('ch')&&f.querySelector(':scope > h3');if(!t)return;
+      if(c.dataset.fsum){const sp=document.createElement('span');sp.className='fold-sum num '+(c.dataset.fsign||'');sp.textContent=c.dataset.fsum;f.appendChild(sp)}
+      out.push({el:c,head:f,title:t,body:[...c.children].filter(x=>x!==f),card:true})});
     v.querySelectorAll('h3.grp-title').forEach(t=>{const n=t.nextElementSibling;if(n&&n.classList.contains('cards'))out.push({el:t,head:t,title:t,body:[n],grp:true})});
     return out},
   items(scope){return [...scope.querySelectorAll('.row,.pfrow,.kvbtn,.qrow,tbody tr,ul>li,.cards>*')]},
@@ -2195,7 +2204,7 @@ function vBiens(){
     const realSum=linked.reduce((s,o)=>s+(o.kind==='inc'?C.net(o):o.kind==='exp'?-o.amount:0),0);
     const firstM=linked.length?linked.map(o=>mk(o.date)).sort()[0]:null;let nM=0;if(firstM){let m=firstM;while(m<=mk(tdy)&&nM<13){nM++;m=addMonths(m,1)}}
     const hasRent=linked.some(o=>o.kind==='inc');
-    h+=`<div class="card"><div class="ch"><h3>${esc(p.name)}</h3><span class="small">${p.rental===false?'non loué':'loué'}</span></div><div class="cb">
+    h+=`<div class="card" data-fsum="${est==null?'':esc(moneyS(est)+'/mois')}" data-fsign="${est==null?'':est<0?'neg':'pos'}"><div class="ch"><h3>${esc(p.name)}</h3><span class="small">${p.rental===false?'non loué':'loué'}</span></div><div class="cb">
       <p class="small muted" style="margin:0 0 6px">${p.detention==='indivision'?'Indivision':'Pleine propriété'} · quote-part ${p.quote==null?'<span class="warn">à compléter</span>':p.quote+' %'}${p.usage?' · '+esc(p.usage):''}</p>
       ${LINES.rowsHTML('prop',p)}
       <div class="kv strong"><span class="k">Cashflow mensuel estimé<small>${p.detention==='indivision'&&p.mode==='detail'?'× ta quote-part':'ta part'}</small></span><span class="v num money ${est!=null&&est<0?'neg':'pos'}">${est==null?'—':moneyS(est)}</span></div>
