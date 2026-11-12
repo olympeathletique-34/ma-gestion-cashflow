@@ -302,6 +302,13 @@ table.year tr.tot td{font-weight:700}
 .hsave{display:inline-flex;align-items:center;gap:6px;position:relative;flex:none}.hs-dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--warn);border:2px solid var(--paper)}
 @media (max-width:560px){.hsave .hs-l{display:none}.hsave{padding:4px 9px}}
 .bkbox{background:var(--soft);border-radius:var(--r-sm);padding:10px 12px;font-size:14px}.bkbox ul{margin:6px 0;padding-left:18px}.bkbox li{margin:2px 0}
+.fold-h{position:relative;padding-right:40px}.fold-t{cursor:pointer}.fold-b{position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.fold-b:hover{background:var(--soft);color:var(--ink)}.fold-b svg{transition:transform .2s}.is-folded .fold-b svg,.is-folded.fold-b svg{transform:rotate(-90deg)}
+h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom:14px}.panel.is-folded:not(.q-open)>.fold-h{margin-bottom:0}
+.q-hide,.f-hide{display:none!important}
+.vsearch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 4px}.vs-in{flex:1 1 220px;display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:0 14px;box-shadow:var(--shadow);color:var(--muted)}
+.vs-in input{border:0;background:none;box-shadow:none;padding:9px 0;min-height:40px;flex:1;min-width:0;font-size:15px;color:var(--ink);outline:none}.vs-in:focus-within{outline:2px solid var(--focus,var(--accent));outline-offset:1px}
+.pf-split{margin:-4px 0 6px;opacity:.9}
 .tseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:2px;gap:2px;background:var(--soft)}
 .tseg button{border:0;background:none;padding:4px 10px;border-radius:999px;font:600 12px/1.2 var(--f-label);color:var(--muted);min-height:28px}
 .tseg button.on{background:var(--ink);color:var(--card)}
@@ -1056,7 +1063,7 @@ function render(){
   const sub=$('#subtabs');sub.hidden=grp.nosub||grp.r.length<2;sub.innerHTML=sub.hidden?'':grp.r.map(k=>`<a href="#${k}" ${S.route===k?'aria-current="page"':''}>${routeLabel(k)}</a>`).join('');
   const v=$('#view');
   const views={feuille:vFeuille,bilan:vBilan,sources:vSources,entreprises:vEntreprises,fasttrack:vGuide,historique:vHist,graphiques:vGraphiques,comptes:vComptes,biens:vBiens,portefeuille:vPortfolio,previsions:vPrev,contrats:vContrats,urssaf:vUrssaf,impots:vImpots,memos:vMemos,reglages:vReglages};
-  try{v.innerHTML=statusLine()+views[S.route]()}catch(e){console.error(e);v.innerHTML='<p class="err">Erreur d’affichage : '+esc(e.message)+'</p>'}
+  try{v.innerHTML=statusLine()+views[S.route]();FOLD.apply(v)}catch(e){console.error(e);v.innerHTML='<p class="err">Erreur d’affichage : '+esc(e.message)+'</p>'}
   if(S.modalRefresh)S.modalRefresh();
 }
 function statusLine(){
@@ -1183,6 +1190,52 @@ function covTools(full){const md=S.covMode||'m';const seg=(act,cur,opts)=>`<div 
   return seg('cov-mode',md,[['m','Mensuel'],['y','Annuel']])+(full&&md==='m'?seg('cov-n',S.covN||12,[[12,'12 mois'],[24,'24 mois'],[36,'36 mois'],['all','Tout']]):'')}
 function covFoot(){return (S.covMode||'m')==='y'?`<p class="small muted" style="margin:6px 0 0">Totaux par année civile. * année en cours, jusqu’à ce jour.</p>`:''}
 /* Graphiques agrandissables : chaque panneau enregistre sa fonction de rendu, rejouée en plein écran à la taille de l’écran. */
+/* Blocs repliables et recherche dans la page : appliqués après chaque affichage, sans toucher aux vues.
+   Un bloc = .panel dont le premier élément est un titre (h3, ou barre contenant un h2/h3) ; dans Contrats, chaque groupe (h3.grp-title + .cards).
+   L’état replié est retenu par page et par titre dans ce navigateur. */
+const FOLD={q:{},
+  norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ')},
+  key(){return 'cf-fold:'+S.route},
+  st(){try{return JSON.parse(localStorage.getItem(FOLD.key())||'{}')}catch(e){return {}}},
+  put(o){try{localStorage.setItem(FOLD.key(),JSON.stringify(o))}catch(e){}},
+  blocks(v){const out=[];
+    v.querySelectorAll('.panel').forEach(p=>{if(p.classList.contains('linkpanel')||p.closest('.modal'))return;const f=p.firstElementChild;if(!f)return;
+      const t=/^H[23]$/.test(f.tagName)?f:(f.querySelector&&f.querySelector(':scope > h2, :scope > h3'));if(!t)return;
+      out.push({el:p,head:f,title:t,body:[...p.children].filter(c=>c!==f)})});
+    v.querySelectorAll('h3.grp-title').forEach(t=>{const n=t.nextElementSibling;if(n&&n.classList.contains('cards'))out.push({el:t,head:t,title:t,body:[n],grp:true})});
+    return out},
+  items(scope){return [...scope.querySelectorAll('.row,.pfrow,.kvbtn,.qrow,tbody tr,ul>li,.cards>*')]},
+  apply(v){if(S.route==='memos'||S.route==='bilan'||S.route==='fasttrack')return;
+    const B=FOLD.blocks(v);const st=FOLD.st();
+    B.forEach(b=>{const name=b.title.textContent.trim();b.name=name;b.head.classList.add('fold-h');
+      const btn=document.createElement('button');btn.type='button';btn.className='fold-b';btn.setAttribute('aria-label',(st[name]?'Déplier « ':'Replier « ')+name+' »');btn.setAttribute('aria-expanded',String(!st[name]));btn.innerHTML='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      b.head.appendChild(btn);b.btn=btn;b.title.classList.add('fold-t');
+      const tog=()=>{const o=FOLD.st();const c=!b.el.classList.contains('is-folded');if(c)o[name]=1;else delete o[name];FOLD.put(o);FOLD.set(b,c)};
+      btn.addEventListener('click',e=>{e.stopPropagation();tog()});b.title.addEventListener('click',tog);
+      FOLD.set(b,!!st[name])});
+    const cards=v.querySelectorAll('.cards>*').length;
+    if(B.length+(cards>3?1:0)<3&&cards<6)return;
+    const bar=document.createElement('div');bar.className='vsearch';
+    bar.innerHTML=`<label class="vs-in"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="search" placeholder="Rechercher…" aria-label="Rechercher dans cette page" value="${esc(FOLD.q[S.route]||'')}"></label>${B.length>1?'<button type="button" class="btn sm ghost" data-f="all"></button>':''}<span class="small muted vs-n" role="status"></span>`;
+    const first=v.querySelector(':scope > .hero-card, :scope > .toolbar, :scope > .panel, :scope > .cards, :scope > h2');
+    if(first&&first.classList.contains('hero-card'))first.after(bar);else v.prepend(bar);
+    const allB=bar.querySelector('[data-f="all"]');
+    const upd=()=>{if(allB){const any=B.some(b=>!b.el.classList.contains('is-folded'));allB.textContent=any?'Tout replier':'Tout déplier'}};
+    if(allB)allB.addEventListener('click',()=>{const fold=allB.textContent==='Tout replier';const o=FOLD.st();B.forEach(b=>{if(fold)o[b.name]=1;else delete o[b.name];FOLD.set(b,fold)});FOLD.put(o);upd()});
+    const inp=bar.querySelector('input');inp.addEventListener('input',()=>{FOLD.q[S.route]=inp.value;FOLD.filter(v,B,bar)});
+    FOLD.upd=upd;upd();if(FOLD.q[S.route])FOLD.filter(v,B,bar)},
+  set(b,c){b.el.classList.toggle('is-folded',c);b.body.forEach(x=>x.classList.toggle('f-hide',c&&!b.el.classList.contains('q-open')));if(b.btn){b.btn.setAttribute('aria-expanded',String(!c));b.btn.setAttribute('aria-label',(c?'Déplier « ':'Replier « ')+b.name+' »')}if(FOLD.upd)FOLD.upd()},
+  filter(v,B,bar){const q=FOLD.norm(FOLD.q[S.route]).trim();const words=q.split(' ').filter(Boolean);const hit=t=>words.every(w=>FOLD.norm(t).includes(w));
+    v.querySelectorAll('.q-hide').forEach(e=>e.classList.remove('q-hide'));let n=0;
+    B.forEach(b=>{b.el.classList.remove('q-open');
+      if(!words.length){FOLD.set(b,!!FOLD.st()[b.name]);return}
+      const scope=b.grp?b.body[0]:b.el;const titleHit=hit(b.name);const its=FOLD.items(scope);let k=0;
+      if(!titleHit&&its.length){its.forEach(it=>{if(hit(it.textContent))k++;else it.classList.add('q-hide')})}
+      const show=titleHit||k>0||(!its.length&&hit(scope.textContent));
+      if(show){n++;b.el.classList.add('q-open');b.body.forEach(x=>x.classList.remove('f-hide'))}else{b.el.classList.add('q-hide');b.body.forEach(x=>x.classList.add('q-hide'))}});
+    if(!B.length){const its=FOLD.items(v);its.forEach(it=>{if(words.length&&!hit(it.textContent))it.classList.add('q-hide');else n++})}
+    bar.querySelector('.vs-n').textContent=words.length?(n?n+' résultat'+(n>1?'s':''):'Aucun résultat'):''}
+};
 const CHARTS={};
 /* Largeur de rendu proche de la largeur réelle du panneau : textes lisibles sur téléphone, graphique pas trop haut sur grand écran. */
 function chartW(){const w=Math.min(window.innerWidth,1180)-(window.innerWidth<700?48:96);return Math.max(300,Math.min(1080,w))}
@@ -1928,12 +1981,13 @@ async function pfRefresh(){
 function savePrices(){if(!S.db)return Promise.resolve();return enqueue('fin/prices',()=>withRetry(()=>S.db.doc('fin/prices').set(clone(S.prices))))}
 function vPortfolio(){
   const ps=pfCfg().positions,t=todayISO(),tot=PFL.total();const pl=tot.v-tot.c;
+  const man=S.cfg.assets.filter(x=>PF_MCATS.includes(x.cat)),manV=man.reduce((a,x)=>a+(C.valAt(x,'value',t)||0),0);
   const lastUpd=ps.map(p=>PFL.quote(p)).filter(Boolean).map(q=>q.d).sort().pop();
-  let h=`<section class="hero-card pf-hero"><div class="hero-top"><span class="eyebrow">Placements · actions, ETF, crypto</span><span class="pill">${lastUpd?'cours du '+fdate(lastUpd):'cours à mettre à jour'}</span></div>
-    <div class="hero"><span class="big money num">${money(tot.v)}</span></div>
-    <div class="hstats"><div class="hstat"><div class="k">Investi</div><div class="v num money">${money(tot.c)}</div><small>prix d’achat + frais</small></div>
+  let h=`<section class="hero-card pf-hero"><div class="hero-top"><span class="eyebrow">Placements · ${man.length?'Bourse, crypto, PEA, fonds':'actions, ETF, crypto'}</span><span class="pill">${lastUpd?'cours du '+fdate(lastUpd):'cours à mettre à jour'}</span></div>
+    <div class="hero"><span class="big money num">${money(tot.v+manV)}</span></div>${man.length?`<p class="pf-split small">dont <b class="money">${money(tot.v)}</b> en lignes cotées et <b class="money">${money(manV)}</b> suivis par leur valeur</p>`:''}
+    <div class="hstats"><div class="hstat"><div class="k">Investi</div><div class="v num money">${money(tot.c)}</div><small>lignes cotées, prix d’achat + frais</small></div>
       <div class="hstat"><div class="k">Plus-value latente</div><div class="v num money">${moneyS(pl)}</div><small>${tot.c?(pl>=0?'+':'')+(pl/tot.c*100).toFixed(1).replace('.',',')+' %':''}</small></div>
-      <div class="hstat"><div class="k">Lignes</div><div class="v num">${ps.length}</div><small>${ps.filter(p=>p.kind==='crypto').length} crypto</small></div></div></section>
+      <div class="hstat"><div class="k">Lignes</div><div class="v num">${ps.length+man.length}</div><small>${ps.filter(p=>p.kind==='crypto').length} crypto${man.length?' · '+man.length+' suivi'+(man.length>1?'s':'')+' par valeur':''}</small></div></div></section>
   <div class="toolbar"><button class="btn" data-act="pf-new" data-kind="titre">+ Action / ETF</button><button class="btn" data-act="pf-new" data-kind="crypto">+ Crypto</button><span class="sp"></span>${DIST?`<button class="btn sm solid" data-act="pf-bulk">↻ Mettre à jour les cours</button>`:`<button class="btn sm" data-act="pf-bulk">Saisir / via une IA</button>`}${DIST?'':`<button class="btn sm solid" data-act="pf-refresh" ${S.pfBusy?'disabled':''}>${S.pfBusy?'Lancement…':S.pfPending?'Mise à jour en cours…':'↻ Mettre à jour les cours'}</button>`}<button class="btn ghost sm" data-act="pf-help" aria-label="Comment sont mis à jour les cours">?</button></div>
   ${S.pfPending?'<p class="small muted" style="margin:0 2px 8px">Claude récupère les cours sur le web ; ils s’afficheront ici automatiquement, en général en 2 à 5 minutes.</p>':''}`;
   if(!ps.length)return h+pfManual()+`<div class="panel"><p class="empty">Ajoute ta première ligne : ISIN (ex. FR0000120271) ou code crypto (ex. BTC), date d’achat, quantité et prix unitaire payé.</p></div>`;
