@@ -889,9 +889,14 @@ const C={
   /* Entreprise d’une dépense : choix manuel > cotisation liée à une recette > catégorie marquée. '-' = aucune. */
   companyOf(o){if(o.kind!=='exp')return null;const L=S.cfg.companies||[];if(!L.length)return null;
     if(o.companyId)return o.companyId==='-'?null:(L.some(x=>x.id===o.companyId)?o.companyId:null);
-    const src=URS.src(o);if(src){const inc=findOp(src);if(inc){const rt=C.root(inc.catId);const co=rt&&L.find(x=>(x.incCats||[]).includes(rt.id));if(co)return co.id}}
+    const src=URS.src(o);if(src){const inc=findOp(src);if(inc){const co=C.incCompany(inc);if(co)return co}}
     let c=C.cat(o.catId),g=0;while(c&&g++<6){if(c.companyId)return L.some(x=>x.id===c.companyId)?c.companyId:null;c=c.parent?C.cat(c.parent):null}return null},
   company(id){return (S.cfg.companies||[]).find(x=>x.id===id)},
+  /* Entreprise d’une recette : choix sur la recette > entreprise de l’activité vendue > catégorie cochée dans l’entreprise. '-' = aucune. */
+  incCompany(o){if(o.kind!=='inc')return null;const L=S.cfg.companies||[];if(!L.length)return null;
+    if(o.companyId)return o.companyId==='-'?null:(L.some(x=>x.id===o.companyId)?o.companyId:null);
+    const a=o.actId&&(planCfg().activities||[]).find(x=>x.id===o.actId);if(a&&a.companyId&&L.some(x=>x.id===a.companyId))return a.companyId;
+    const rt=C.root(o.catId);const co=L.find(x=>(x.incCats||[]).includes(o.catId)||(rt&&(x.incCats||[]).includes(rt.id)));return co?co.id:null},
   isRecurringOp(o){return !!(o.contractId||o.urssafFor||String(o.id||'').startsWith('op-urs-'))},
   /* Une sous-catégorie peut porter son propre régime (ex. aides sociales non imposables sous Revenus d’exploitation). */
   taxCfg(catId){const c=C.cat(catId);if(c&&c.parent&&(c.tax||c.nonTaxable))return c.nonTaxable?{preset:'none'}:c.tax;const r=C.root(catId);return r&&r.tax?r.tax:null},
@@ -1404,13 +1409,14 @@ function actForm(id,name){
   cfgForm(id?'Activité · '+a.name:'Nouvelle activité',[
     {k:'name',l:'Nom',req:true},{k:'type',l:'Type',t:'select',o:Object.entries(ACT_TYPES)},
     {k:'catId',l:'Catégorie de recette (pour les cotisations et le suivi)',t:'select',o:[['','Aucune'],...S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent).map(c=>[c.id,c.name])]},
+    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise qui vend cette activité',t:'select',o:[['','Selon la catégorie de recette'],...S.cfg.companies.map(x=>[x.id,x.name])],h:'Les ventes de cette activité seront comptées dans cette entreprise (chiffre d’affaires, URSSAF).'}]:[]),
     {k:'price',l:'Prix de vente',t:'money'},{k:'unit',l:'Unité',ph:'séance, heure, stage, vente, mois…'},{k:'unitPlural',l:'Unité au pluriel',ph:'séances, ventes…'},
     {k:'hours',l:'Temps passé par unité (heures, préparation et trajet compris)',t:'number',h:'Sert à calculer ton taux horaire réel.'},
     {k:'cost',l:'Frais directs par unité',t:'money',h:'Déplacement, matériel, commission de plateforme…'},
     {k:'current',l:'Volume actuel par mois',t:'number'},{k:'target',l:'Objectif par mois',t:'number'},
     {k:'keyword',l:'Mot-clé pour retrouver les ventes dans tes recettes',ph:'ex. stage, Zone 4E',h:'Sont comptées dans « Ce mois » les recettes de la catégorie dont le libellé contient ce mot (à défaut, le nom de l’activité), et celles ajoutées avec le bouton « + 1 vente ».'},{k:'notes',l:'Notes',t:'area'}],a,(o)=>{
       for(const k of ['hours','current','target'])if(o[k]!=null&&o[k]<0){$('#cf-err').textContent='Les nombres doivent être positifs.';return false}
-      Object.assign(a,o);if(!id)p.activities.push(a);if(S.simVol)delete S.simVol[a.id];saveCfg();toast('Activité enregistrée')},
+      Object.assign(a,o);if(!a.companyId)delete a.companyId;if(!id)p.activities.push(a);if(S.simVol)delete S.simVol[a.id];saveCfg();toast('Activité enregistrée')},
     {onDelete:id?()=>{p.activities=p.activities.filter(x=>x.id!==id);saveCfg()}:null});
 }
 /* Mise à jour du simulateur sans tout redessiner */
@@ -2224,7 +2230,7 @@ function vSources(){
 /* ==================== Vue : Entreprises ==================== */
 const COPLAF={me_bnc:'bnc',me_cipav:'cipav',me_bics:'bics',me_bicv:'vente'};
 function coStats(co,y){const from=y+'-01-01',to=y+'-12-31',m0=mk(todayISO());const inc=new Set(co.incCats||[]);
-  const isInc=o=>o.kind==='inc'&&(inc.has(o.catId)||(C.root(o.catId)&&inc.has(C.root(o.catId).id)));
+  const isInc=o=>o.kind==='inc'&&C.incCompany(o)===co.id;
   const r={ca:0,urs:0,chg:0,caM:0,ursM:0,chgM:0};
   for(const o of C.range(from,to)){if(!C.isReal(o))continue;const m=o.date.slice(0,7)===m0;
     if(isInc(o)){const rt=o.retenues||{},t=C.taxOf(o.catId)||{};const u=(rt.urssaf||0)+(rt.cotis||0)+(t.vl?(rt.ir||0):0),b=C.brut(o);r.ca+=b;r.urs+=u;if(m){r.caM+=b;r.ursM+=u}}
@@ -2922,6 +2928,7 @@ function opForm(kind,op,preset={}){
     b+=`<label class="f">Description<input type="text" id="op-desc" value="${esc(d.desc)}" placeholder="${kind==='exp'?'ex. Plein d’essence':'ex. Stage trail enfants'}"></label>`;
     if(kind==='exp')b+=`<div id="don-box"></div>`;
     if(kind==='inc'){
+      b+=`<div id="act-box"></div>`;
       b+=`<div id="atype-wrap"><div class="small muted" style="margin-bottom:4px;font-family:var(--f-label);font-weight:600">Type de montant</div>${seg('op-atype',[['net','Net'],['brut','Brut'],['apreciser','À préciser']],d.amountType)}</div>
       <div id="ret-box"></div><div id="decl-box"></div>`;
     }
@@ -2941,13 +2948,26 @@ function opForm(kind,op,preset={}){
   modalState.op=d;modalState.prevDate=isNew?null:op.date;modalState.auto=isNew?true:!!o.autoRet;
   if(kind!=='tr'){d.recName=o.recName||'';renderRecBox();$('.modal').addEventListener('change',e=>{if(e.target.name==='op-recur')renderRecBox()})}
   if(kind==='exp'){renderDon();$('.modal').addEventListener('change',e=>{if(e.target.id==='op-cat'||e.target.id==='op-taxded'||e.target.id==='op-taxrate')renderDon()});$('.modal').addEventListener('input',e=>{if(e.target.id==='op-amount')renderDon()})}
-  if(kind==='inc'){renderRet();renderDecl();$('.modal').addEventListener('change',e=>{if(e.target.name==='op-atype'||e.target.name==='op-retmode')modalState.auto=false;if(e.target.name==='op-atype'||e.target.name==='op-retmode'||e.target.id==='op-cat')renderRet();if(e.target.id==='op-cat')renderDecl()});$('.modal').addEventListener('input',e=>{if(e.target.closest('#ret-box')&&e.target.id&&e.target.id.startsWith('ret-')&&modalState.auto){modalState.auto=false;const n=$('#auto-note');if(n)n.outerHTML=autoNoteHTML();}if(e.target.id==='op-amount'&&modalState.auto&&C.taxOf(val('op-cat'))){fillAuto();}if(e.target.id==='op-amount'||e.target.closest('#ret-box'))updRetCalc()})}
+  if(kind==='inc'){renderAct(true);$('.modal').addEventListener('change',e=>{if(e.target.id==='op-cat')renderAct();else if(e.target.id==='op-act')actPicked()});renderRet();renderDecl();$('.modal').addEventListener('change',e=>{if(e.target.name==='op-atype'||e.target.name==='op-retmode')modalState.auto=false;if(e.target.name==='op-atype'||e.target.name==='op-retmode'||e.target.id==='op-cat')renderRet();if(e.target.id==='op-cat')renderDecl()});$('.modal').addEventListener('input',e=>{if(e.target.closest('#ret-box')&&e.target.id&&e.target.id.startsWith('ret-')&&modalState.auto){modalState.auto=false;const n=$('#auto-note');if(n)n.outerHTML=autoNoteHTML();}if(e.target.id==='op-amount'&&modalState.auto&&C.taxOf(val('op-cat'))){fillAuto();}if(e.target.id==='op-amount'||e.target.closest('#ret-box'))updRetCalc()})}
 }
 function renderRecBox(){const box=$('#rec-box');if(!box)return;const d=modalState.op;if(radio('op-recur')!=='recurrent'){box.innerHTML='';return}
   const cur=$('#op-recname')?val('op-recname'):(d.recName||(d.contractId?'':d.desc)||'');const canCt=d.kind==='exp'&&!d.contractId&&!val('op-contract');
   box.innerHTML=`<div class="calc stack"><label class="f">Nom visible de la récurrence<small>Affiché dans tes dépenses récurrentes (ex. Netflix, salle de sport, forfait mobile).</small><input type="text" id="op-recname" value="${esc(cur)}" placeholder="ex. Forfait mobile"></label>
     ${canCt?`<label class="check"><input type="checkbox" id="op-mkct"> Prévoir aussi les prochaines échéances (ajout dans Contrats)</label><label class="f" id="op-mkct-f" hidden>Fréquence<select id="op-mkct-per"><option value="1">Mensuelle</option><option value="3">Trimestrielle</option><option value="6">Semestrielle</option><option value="12">Annuelle</option></select></label>`:''}</div>`;
   const ck=$('#op-mkct');if(ck)ck.addEventListener('change',()=>{$('#op-mkct-f').hidden=!ck.checked});}
+/* Recette : choix de l’activité vendue (activités de la catégorie choisie) et de l’entreprise qui l’encaisse. */
+function renderAct(first){const box=$('#act-box');if(!box)return;const d=modalState.op;const cat=val('op-cat');const rt=C.root(cat);
+  const acts=(planCfg().activities||[]).filter(a=>a.catId&&(a.catId===cat||(rt&&a.catId===rt.id)));
+  const cur=first?d.actId:(($('#op-act')||{}).value||'');const sel=acts.some(a=>a.id===cur)?cur:'';
+  const L=S.cfg.companies||[];const coCur=first?(d.companyId||''):(($('#op-icompany')||{}).value||'');
+  if(!acts.length&&!L.length){box.innerHTML='';return}
+  box.innerHTML=`<div class="grid2">${acts.length?`<label class="f">Activité vendue<select id="op-act"><option value="">Aucune en particulier</option>${acts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.price!=null?' · '+money(a.price):''}</option>`).join('')}</select></label>`:''}
+    ${L.length?`<label class="f">Entreprise<select id="op-icompany"><option value="">${esc(actCoAuto(sel,cat))}</option>${L.map(x=>`<option value="${x.id}" ${coCur===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}<option value="-" ${coCur==='-'?'selected':''}>Aucune (revenu personnel)</option></select></label>`:''}</div>`}
+function actCoAuto(actId,cat){const a=actId&&(planCfg().activities||[]).find(x=>x.id===actId);const co=C.incCompany({kind:'inc',catId:cat,actId:actId||undefined});return 'Automatique'+(co?' : '+((C.company(co)||{}).name||''):' : aucune')+(a&&a.companyId?' (activité)':'')}
+function actPicked(){const id=val('op-act');const a=id&&(planCfg().activities||[]).find(x=>x.id===id);
+  if(a){const am=$('#op-amount');if(am&&!parseMoney(am.value)&&a.price!=null){am.value=cIn(a.price);am.dispatchEvent(new Event('input',{bubbles:true}))}
+    const de=$('#op-desc');if(de&&!de.value.trim())de.value=(a.keyword||'').trim()||('Vente '+a.name)}
+  const co=$('#op-icompany');if(co){const o=co.options[0];o.textContent=actCoAuto(id,val('op-cat'))}}
 function autoNoteHTML(){const t=C.taxOf(val('op-cat'));if(!t)return '<div id="auto-note"></div>';
   const lbl=(TAX_PRESETS[t.preset]||{}).label||'';
   return modalState.auto?`<div class="autonote" id="auto-note"><span style="flex:1"><b>Calcul automatique</b> · ${esc(lbl)}<br><span class="muted">${esc(C.taxSummary(t))} · taux ${esc(t.year||TAX_YEAR)}, modifiables dans Réglages${t.mode==='net'?'<br>Saisis le net reçu sur ton compte : le brut et les prélèvements sont reconstitués.':''}</span></span><button type="button" class="btn sm ghost" data-act="ret-manual">Saisir à la main</button></div>`
@@ -2990,6 +3010,8 @@ async function saveOpForm(){
   d.amount=amt;d.date=val('op-date')||todayISO();d.accountId=val('op-acc');d.desc=val('op-desc').trim();
   if(d.kind==='tr'){d.toAccountId=val('op-to');d.status='paye';if(!d.accountId||!d.toAccountId){err.textContent='Choisis le compte de départ et le compte d’arrivée.';return}if(d.accountId===d.toAccountId){err.textContent='Les deux comptes doivent être différents.';return}delete d.catId}
   else{d.catId=val('op-cat');if(!d.catId){err.textContent='Choisis une catégorie.';return}d.status=radio('op-status')||d.status;d.recur=radio('op-recur')||'courant';d.propertyId=val('op-prop');d.contractId=val('op-contract');if($('#op-company')){const cv=val('op-company');if(cv)d.companyId=cv;else delete d.companyId}d.activity=val('op-activity').trim();d.comment=val('op-comment').trim();
+    if(d.kind==='inc'){if($('#op-act')){const v=val('op-act');if(v)d.actId=v;else delete d.actId}else if(d.actId&&!(planCfg().activities||[]).some(a=>a.id===d.actId&&(a.catId===d.catId||(C.root(d.catId)&&a.catId===C.root(d.catId).id))))delete d.actId;
+      if($('#op-icompany')){const v=val('op-icompany');if(v)d.companyId=v;else delete d.companyId}}
     if(d.kind==='inc'&&C.root(d.catId)&&C.root(d.catId).netFinal){d.autoRet=false;d.amountType='net';d.retMode='deja';d.retenues={}}
     else if(d.kind==='inc'){d.autoRet=!!(modalState.auto&&C.taxOf(d.catId));d.amountType=radio('op-atype')||'net';d.retMode=radio('op-retmode')||'a_payer';const r={};for(const k of ['urssaf','cotis','csg','ir','autres']){const v=parseMoney(val('ret-'+k));if(Number.isNaN(v)){err.textContent='Montant de retenue invalide.';return}if(v)r[k]=v}d.retenues=r;
       if(d.retMode==='a_payer'&&C.retTotal(d)>d.amount){err.textContent='Les retenues dépassent le montant brut.';return}
