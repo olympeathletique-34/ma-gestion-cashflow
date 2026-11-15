@@ -52,7 +52,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 #acts button.go{background:linear-gradient(135deg,#2bb673,#1b8a59);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(43,182,115,.3)}
 #acts button.wide{grid-column:span 2}
 #acts button:disabled{opacity:.4}
-#nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 #nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:12px;background:rgba(255,255,255,.05);font-size:11px;font-weight:650;color:#cfdbe6}
 #nav button i{font-style:normal;font-size:20px;line-height:1.1}
 #nav button:active{background:rgba(245,196,81,.2)}
@@ -137,7 +137,7 @@ canvas.sp{width:100%;height:44px;display:block;border-radius:10px}
  #acts{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
  #acts::-webkit-scrollbar{display:none}
  #acts button{flex:0 0 auto;max-width:74vw;white-space:nowrap}
- #nav{grid-template-columns:repeat(6,1fr);gap:0;padding-top:5px;border-top:1px solid var(--line)}
+ #nav{grid-template-columns:repeat(7,1fr);gap:0;padding-top:5px;border-top:1px solid var(--line)}
  #nav button{background:none;padding:3px 0 4px;font-size:10px}
  .ov{align-items:flex-end;padding:calc(8px + var(--sat)) 0 0}
  .card{width:100%;border-radius:24px 24px 0 0;max-height:100%;padding:14px 16px calc(16px + var(--sab));border-bottom:0;animation:up .28s cubic-bezier(.2,.9,.3,1)}
@@ -153,12 +153,31 @@ canvas.sp{width:100%;height:44px;display:block;border-radius:10px}
 @media (orientation:landscape) and (max-height:480px){
  #top{padding:3px 5px 3px 10px;gap:8px}#vit button{height:28px;width:30px}#bMenu{height:30px}
  #bot{gap:6px;padding:6px}#acts button{min-height:34px;font-size:12px}
- #nav{grid-template-columns:repeat(6,1fr);gap:2px}#nav button{padding:4px 0;font-size:9.5px}#nav button i{font-size:17px}
+ #nav{grid-template-columns:repeat(7,1fr);gap:2px}#nav button{padding:4px 0;font-size:9.5px}#nav button i{font-size:17px}
  #info h3{font-size:13.5px}#info .l{font-size:11.5px}
  .card{padding:12px 16px}.big{padding:8px 12px}
  .prof button{padding:8px}
 }
 @media (orientation:portrait) and (max-width:380px){.stat i{display:none}#vit button{width:28px}#top{padding-left:10px}}
+
+/* ---------- Fast Track ---------- */
+.ftsum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.ftsum div{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:8px 10px;min-width:0}
+.ftsum small{display:block;color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.ftsum b{font-size:14px;white-space:nowrap}
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.06);border-radius:14px;padding:4px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;padding:8px 10px;border-radius:11px;font-weight:650;font-size:12.5px;color:#cfdbe6;white-space:nowrap}
+.seg button.on{background:var(--gold);color:#1a1405;box-shadow:0 2px 10px rgba(245,196,81,.35)}
+.dream{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(245,196,81,.15),rgba(255,126,182,.11));border:1px solid rgba(245,196,81,.38);border-radius:18px;padding:14px}
+.dream .dic{font-size:46px;line-height:1}
+.rep.big2{width:100%;height:10px;margin:8px 0 4px}
+.rep.big2 i{background:linear-gradient(90deg,#f5c451,#ff7eb6,#a78bfa)}
+.pc.cur{border-color:rgba(245,196,81,.6);background:rgba(245,196,81,.06)}
+.mini:disabled{opacity:.45}
+.ftlock{text-align:center;padding:6px}
+#lib.ft .b i{background:linear-gradient(90deg,#f5c451,#ff7eb6,#a78bfa);box-shadow:0 0 12px rgba(255,126,182,.6)}
+@media (max-width:520px){.ftsum{grid-template-columns:1fr 1fr}}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="top">
@@ -180,7 +199,7 @@ canvas.sp{width:100%;height:44px;display:block;border-radius:10px}
  <nav id="nav">
   <button data-p="annonces"><i>🏷️</i>Annonces</button><button data-p="boite"><i>🏢</i>Ma boîte</button>
   <button data-p="banque"><i>🏦</i>Banque</button><button data-p="bourse"><i>📈</i>Bourse</button>
-  <button data-p="finances"><i>📒</i>Finances</button><button data-p="classement"><i>🏆</i>Rivaux</button>
+  <button data-p="finances"><i>📒</i>Finances</button><button data-p="classement"><i>🏆</i>Rivaux</button><button data-p="fasttrack"><i>🌟</i>Fast Track</button>
  </nav>
 </div>
 <div class="ov cache" id="pan"><div class="card big"><div class="hd"><h2 id="panT"></h2><button class="mini" id="panX">✕ Fermer</button></div><div class="bd" id="panB"></div></div></div>
@@ -205,7 +224,7 @@ function payment(L,rate,n){const r=rate/12;return r>0?L*r/(1-Math.pow(1+r,-n)):L
 function wpick(o){let t=0;for(const k in o)t+=o[k];let r=rnd()*t;for(const k in o){r-=o[k];if(r<=0)return k;}return Object.keys(o)[0];}
 
 /* ---------- données ---------- */
-const W=25,H=25,OX=H*32+60,OY=190,SCW=(W+H+4)*32+120,SCH=(W+H)*16+OY+70;
+const W=31,H=25,OX=H*32+60,OY=190,SCW=(W+H+4)*32+120,SCH=(W+H)*16+OY+70;
 const P=(x,y)=>[OX+(x-y)*32,OY+(x+y)*16];
 const TYPES={
  studio:{n:'Studio',ic:'🏠',meub:3000,price:78000,rent:490,h:34,res:1,work:2500},
@@ -216,18 +235,24 @@ const TYPES={
  immeuble:{n:'Immeuble de 6 appartements',ic:'🏬',meub:18000,price:520000,rent:3450,h:80,res:1,work:15000},
  bureau:{n:'Plateau de bureaux',ic:'🏙️',price:240000,rent:1500,h:64,biz:1,work:8000},
  terrain:{n:'Terrain constructible',ic:'🌱',price:60000,rent:0,h:0,work:0},
+ villa:{n:'Villa avec piscine',ic:'🏝️',meub:15000,price:420000,rent:2100,h:38,res:1,work:12000},
+ loft:{n:'Loft',ic:'🌇',meub:6000,price:190000,rent:980,h:54,res:1,work:6000},
+ hotel:{n:'Hôtel de standing',ic:'🏨',price:1400000,rent:9000,h:96,work:40000},
+ mall:{n:'Centre commercial',ic:'🛍️',price:2200000,rent:14500,h:34,work:60000},
+ tour:{n:'Tour de bureaux',ic:'🌆',price:2600000,rent:16000,h:140,work:70000},
  banque:{n:'Banque',ic:'🏦',pub:1,h:44},bourse:{n:'Bourse',ic:'📈',pub:1,h:48},mairie:{n:'Mairie',ic:'🏛️',pub:1,h:40},parc:{n:'Parc',ic:'🌳',pub:1,h:0},gare:{n:'Gare',ic:'🚉',pub:1,h:32}
 };
 const DIST={
  centre:{n:'Centre-ville',pi:1.45,ri:1.15,traffic:1.3,trend:.025,vol:.010,risk:.010,dem:1.3,col:'rgba(224,176,48,.20)'},
  port:{n:'Le Port',pi:1.2,ri:1.05,traffic:1.1,trend:.02,vol:.012,risk:.014,dem:1.1,col:'rgba(47,116,224,.20)'},
  gare:{n:'Quartier de la Gare',pi:1.0,ri:1.0,traffic:1.15,trend:.012,vol:.015,risk:.02,dem:1.0,col:'rgba(126,224,138,.18)'},
- faubourg:{n:'Le Faubourg',pi:.65,ri:.85,traffic:.7,trend:0,vol:.025,risk:.04,dem:.8,col:'rgba(216,67,47,.18)'}
+ faubourg:{n:'Le Faubourg',pi:.65,ri:.85,traffic:.7,trend:0,vol:.025,risk:.04,dem:.8,col:'rgba(216,67,47,.18)'},
+ hauteurs:{n:'Les Hauteurs',pi:1.6,ri:1.3,traffic:1.45,trend:.03,vol:.016,risk:.006,dem:.85,col:'rgba(167,139,250,.22)'}
 };
-const BIG={centre:{immeuble:5,bureau:4,maison:1},port:{immeuble:4,bureau:2,maison:3,terrain:1},gare:{immeuble:4,bureau:3,maison:2,terrain:2},faubourg:{immeuble:3,bureau:1,maison:4,terrain:3}};
-const SMALL={centre:{studio:3,appart:4,boutique:4,parking:1},port:{studio:3,appart:3,boutique:3,parking:1},gare:{studio:4,appart:3,boutique:2,parking:2},faubourg:{studio:4,appart:3,boutique:2,parking:2}};
+const BIG={hauteurs:{villa:4,hotel:2,mall:1,tour:2},centre:{immeuble:5,bureau:4,maison:1},port:{immeuble:4,bureau:2,maison:3,terrain:1},gare:{immeuble:4,bureau:3,maison:2,terrain:2},faubourg:{immeuble:3,bureau:1,maison:4,terrain:3}};
+const SMALL={hauteurs:{loft:3,appart:2,boutique:2},centre:{studio:3,appart:4,boutique:4,parking:1},port:{studio:3,appart:3,boutique:3,parking:1},gare:{studio:4,appart:3,boutique:2,parking:2},faubourg:{studio:4,appart:3,boutique:2,parking:2}};
 const PUBLIC=[{bx:1,by:1,lot:'A',type:'banque'},{bx:2,by:1,lot:'B',type:'bourse'},{bx:1,by:2,lot:'C',type:'mairie'},{bx:2,by:2,lot:'D',type:'parc'},{bx:3,by:2,lot:'A',type:'gare'},{bx:0,by:3,lot:'D',type:'parc'}];
-function distOf(bx,by){if(bx>=1&&bx<=2&&by>=1&&by<=2)return 'centre';if(by===0)return 'port';if(bx===3)return 'gare';return 'faubourg';}
+function distOf(bx,by){if(bx===4)return 'hauteurs';if(bx>=1&&bx<=2&&by>=1&&by<=2)return 'centre';if(by===0)return 'port';if(bx===3)return 'gare';return 'faubourg';}
 const ACT={
  coaching:{n:'Salle de coaching sportif',ic:'🏋️',locals:['boutique','bureau'],setup:4000,unit:'séance',price0:45,cogs:.04,ownerCap:110,empCap:130,empCost:2900,base:150,el:1.3,pubK:700,comm:0,
   d:'Peu de capital, bonne marge, mais tout repose sur ton temps : sans coachs salariés, tu plafonnes vite.'},
@@ -273,6 +298,9 @@ const OBJ=[['Ouvre les 🏷️ Annonces et repère un bien à cashflow positif',
  ['Atteins 500 € de revenus passifs par mois',()=>S.lastL&&S.lastL.pas>=500],
  ['Fais tourner ta boîte sans toi (embauche un gérant)',()=>S.comp&&S.comp.gerant],
  ['Sors de la Rat Race',()=>S.won],
+ ['Choisis ton rêve dans la 🌟 Fast Track',()=>!!(S.ft&&(S.ft.dream||S.ft.dreams.length))],
+ ['Investis dans une grande affaire (🌟 › Affaires)',()=>!!(S.ft&&(S.ft.hold.length||S.ft.dreams.length))],
+ ['Réalise ton premier rêve',()=>!!(S.ft&&S.ft.dreams.length)],
  ['Atteins 1 million d\'euros de patrimoine net',()=>netWorth()>=1e6],
  ['Atteins 10 000 € de revenus passifs par mois',()=>S.lastL&&S.lastL.pas>=10000]];
 
@@ -333,10 +361,11 @@ function compValue(){
  const proDebt=S.loans.filter(l=>l.kind==='pro').reduce((s,l)=>s+l.rest,0);
  return Math.max(0,(avg-norm)*12*(c.gerant?4:2.5))+Math.max(0,c.tres)-proDebt;
 }
-function debts(perso){return S.loans.filter(l=>perso?l.kind!=='pro':true).reduce((s,l)=>s+l.rest,0);}
+function debts(perso){return S.loans.filter(l=>perso?l.kind!=='pro':true).reduce((s,l)=>s+l.rest,0)+(S.ft?S.ft.hold.reduce((s,h)=>s+(h.debt||0),0):0);}
 function netWorth(){
  let v=S.P.cash+S.P.livret+stockValue()+compValue()-debts(true);
  for(const p of S.props)if(p.owner===0)v+=value(p);
+ if(S.ft)for(const h of S.ft.hold)v+=h.val;
  return v;
 }
 function rivalWorth(r){let v=r.cash;for(const p of S.props)if(p.owner===r.id)v+=value(p);for(const l of r.loans)v-=l.rest;return v;}
@@ -369,7 +398,7 @@ function newLoan(label,L,rate,n,kind,prop){
 function newGame(pk){
  const pr=PROFILS[pk];
  S={v:1,day:0,speed:1,nid:0,P:{profil:pk,cash:pr.cash,job:!!pr.job,salary:pr.salary,vie:pr.vie,logement:pr.logement,chom:{m:0,amt:0},livret:0,deficit:0,home:null,travauxM:0,ownerMul:1,jobSearch:0},
-  props:[],trees:[],loans:[],comp:null,stk:{},dca:0,rivals:[],rate:.034,mkt:1,rentIdx:1,di:{centre:1,port:1,gare:1,faubourg:1},dtr:{centre:0,port:0,gare:0,faubourg:0},dtrM:0,
+  props:[],trees:[],loans:[],comp:null,stk:{},dca:0,rivals:[],rate:.034,mkt:1,rentIdx:1,di:{centre:1,port:1,gare:1,faubourg:1,hauteurs:1},dtr:{centre:0,port:0,gare:0,faubourg:0,hauteurs:0},dtrM:0,
   hist:[],journal:[],won:false,negM:0,evCd:2,evq:[],lastL:null,flags:{},tipI:0,recession:0,objDone:0};
  genCity();
  for(const k in ASSETS){const a=ASSETS[k],h=[];let p=a.p0;for(let i=0;i<52;i++){p*=Math.exp((a.mu-a.vol*a.vol/2)/52+a.vol/Math.sqrt(52)*gauss());h.push(p);}S.stk[k]={p,h,q:0,c:0};}
@@ -452,8 +481,9 @@ function ledger(){
  const remSoc=c&&c.statut!=='micro'?L.boite:0;
  L.ir=.1*(L.salaire+remSoc)+.06*L.chom;
  L.actif=L.salaire+L.chom+(L.boitePassif?0:L.boite);
- L.pas=loyers-charges-tf-agence-payImmo-taxF+L.div+L.livret+(L.boitePassif?L.boite:0);
- L.dep=L.vie+L.logement+homeCh+payHome+payPerso;
+ let ftCf=0;if(S.ft)for(const h of S.ft.hold)ftCf+=h.cf||0;L.ftCf=ftCf;L.life=S.ft?lifeCost():0;
+ L.pas=loyers-charges-tf-agence-payImmo-taxF+L.div+L.livret+(L.boitePassif?L.boite:0)+ftCf;
+ L.dep=L.vie+L.logement+homeCh+payHome+payPerso+L.life;
  L.cf=L.actif+L.pas-L.dep-L.ir;
  return L;
 }
@@ -597,6 +627,7 @@ function monthEnd(){
  for(const r of S.rivals)rivalMonth(r);
  if(S.comp)simComp();
  // comptes
+ if(S.ft)simHoldings();
  const L=ledger();S.lastL=L;
  p.cash+=L.cf;p.deficit=L.newDef;p.travauxM=0;
  for(const l of S.loans){const i=l.rest*l.rate/12;if(l.kind==='pro'){S.comp&&(S.comp.tres-=0);}l.rest=Math.max(0,l.rest-(l.pay-i));l.left--;}
@@ -637,6 +668,8 @@ function monthEnd(){
  S.hist.push({m,nw:netWorth(),cf:L.cf,pas:L.pas,dep:L.dep,cash:p.cash});if(S.hist.length>480)S.hist.shift();
  // victoire
  if(!S.won&&L.pas>=L.dep&&L.dep>0){S.won=true;S.wonM=m;journal('Sortie de la Rat Race !');queueEvent('victoire');}
+ else if(S.ft&&!S.ft.active&&L.pas>=L.dep&&L.dep>0){S.ft.active=true;S.ft.neg=0;toast('🌟 Te revoilà dans la Fast Track !','g',7000);journal('Retour dans la Fast Track');}
+ if(S.ft)ftMonth(L);
  // conseils
  if(m<24&&m%2===1&&S.tipI<TIPS.length)toast('🧔 Le père riche : '+TIPS[S.tipI++],'c',9000);
  // événements
@@ -833,13 +866,288 @@ const EV={
    {t:'Fermer la boîte',fx:()=>{closeCompany();return 'C\'est fini. Avec une société, tes biens personnels sont protégés.';}}];},
   l:'Une boîte meurt rarement faute de clients : elle meurt faute de trésorerie. Surveille le résultat chaque mois et réagis vite.'},
  victoire:{t:'🎉 Tu es sorti de la Rat Race !',txt:()=>{const y=Math.floor(S.wonM/12),m=S.wonM%12;return `<p>Tes revenus passifs (<b>${fmt(S.lastL.pas)}</b>/mois) couvrent maintenant tes dépenses (<b>${fmt(S.lastL.dep)}</b>/mois). Tu pourrais arrêter de travailler.</p><p>Temps nécessaire : <b>${y} an${y>1?'s':''} et ${m} mois</b>.</p><p>Nouveaux défis : 1 million de patrimoine et 10 000 € de revenus passifs par mois.</p>`;},
-  ch:()=>[{t:'Continuer vers la voie rapide',fx:()=>'Bravo !'}],l:'La liberté financière ne dépend pas de ce que tu gagnes, mais de ce que tu gardes et de ce qui travaille pour toi.'}
+  ch:()=>[{t:'🌟 Entrer dans la Fast Track',fx:()=>{startFT();return 'Bienvenue dans la Fast Track ! Un nouveau quartier de luxe, les Hauteurs, vient d\'ouvrir, et de grandes affaires t\'attendent dans l\'onglet 🌟. Mais d\'abord, une question : à quoi va servir ton argent ?';}}],l:'La liberté financière ne dépend pas de ce que tu gagnes, mais de ce que tu gardes et de ce qui travaille pour toi.'}
 };
+/* =====================================================================
+   FAST TRACK — après la sortie de la Rat Race
+   ===================================================================== */
+const ftOn=()=>!!(S.ft&&S.ft.active);
+const DREAMS=[
+ {k:'monde',ic:'🌍',n:'Un tour du monde en famille',cost:140000,b:90,up:0,d:'Un an de voyage. Une dépense unique, des souvenirs pour la vie.'},
+ {k:'voilier',ic:'⛵',n:'Un voilier de croisière',cost:280000,b:70,up:1500,d:'Le grand large. Il coûtera aussi 1 500 € par mois de port et d\'entretien.'},
+ {k:'startup',ic:'🚀',n:'Lancer la startup de tes rêves',cost:300000,b:60,up:0,vc:1,d:'Tu finances le projet qui te tient à cœur. Il entre dans tes placements comme un pari de capital-risque.'},
+ {k:'fondation',ic:'🏟️',n:'Une fondation sportive pour les jeunes',cost:400000,b:80,up:2500,ub:12,d:'Un club gratuit pour les enfants de la ville : 2 500 € par mois de fonctionnement, et beaucoup de bonheur chaque mois.'},
+ {k:'mer',ic:'🏖️',n:'Une maison face à la mer',cost:650000,b:120,up:1800,d:'Une maison à toi, les pieds dans le sable. Comptes 1 800 € par mois d\'entretien.'},
+ {k:'libre',ic:'🕊️',n:'Ne plus jamais dépendre d\'un salaire',cost:0,b:100,up:0,req:1,d:'Objectif : des revenus passifs égaux à 2 fois tes dépenses, sans emploi salarié.'}
+];
+const LIFE=[
+ {k:'resto',ic:'🍽️',n:'Restaurants et sorties',c:600,b:4},
+ {k:'coach',ic:'🏋️',n:'Coach sportif et bien-être',c:450,b:5},
+ {k:'cadeaux',ic:'🎁',n:'Générosité (cadeaux, dons)',c:700,b:6},
+ {k:'voyages',ic:'✈️',n:'Voyages réguliers',c:900,b:6},
+ {k:'voiture',ic:'🏎️',n:'Voiture de sport',c:1100,b:3},
+ {k:'ecole',ic:'🎓',n:'École privée pour les enfants',c:1300,b:4},
+ {k:'menage',ic:'🧹',n:'Personnel de maison',c:1800,b:4}
+];
+const HOUSES=[
+ {k:'base',ic:'🏠',n:'Ton logement actuel',c:null,b:0},
+ {k:'loft',ic:'🌇',n:'Loft en centre-ville',c:1700,b:3},
+ {k:'villa',ic:'🏡',n:'Villa avec jardin',c:3200,b:6},
+ {k:'pent',ic:'🏙️',n:'Penthouse aux Hauteurs',c:5200,b:9}
+];
+function lifeCost(){const f=S.ft;if(!f)return 0;let c=f.upkeep||0;for(const k of f.life){const i=LIFE.find(x=>x.k===k);if(i)c+=i.c;}return c;}
+const ftHoldVal=()=>S.ft?S.ft.hold.reduce((s,h)=>s+h.val,0):0;
+function ftScore(){const f=S.ft;return f?Math.round(f.dreams.length*1000+f.bonheur+Math.max(0,netWorth())/1000):0;}
+function startFT(){
+ if(S.ft){S.ft.active=true;return;}
+ S.ft={active:true,since:month(),dream:null,dreams:[],life:[],house:'base',baseRent:S.P.logement,upkeep:0,upB:0,bonheur:0,lastB:0,hold:[],deals:[],neg:0,nid:0};
+ S.di.hauteurs=S.di.hauteurs||1;S.dtr.hauteurs=S.dtr.hauteurs||0;
+ genHauteurs();
+ for(let i=0;i<4;i++)S.ft.deals.push(makeDeal());S.ft.deals.push(makeDeal('scpi'));S.ft.deals.push(makeDeal('roy'));
+ journal('Entrée dans la Fast Track');
+ queueEvent('reve');
+ sel=null;const c=P(27.5,12.5);centerOn(c[0],c[1]);
+ toast('🌟 Un nouveau quartier vient d\'ouvrir : les Hauteurs','c',7000);
+}
+function genHauteurs(){
+ if(S.props.some(p=>p.dist==='hauteurs'))return;
+ for(let by=0;by<4;by++){const x0=25,y0=1+by*6;
+  for(const l of [[0,0,2],[3,0,2],[0,3,2],[3,3,2],[2,0,1],[0,2,1],[4,2,1],[2,4,1]])addProp(wpick(l[2]===2?BIG.hauteurs:SMALL.hauteurs),x0+l[0],y0+l[1],l[2],'hauteurs');
+  for(const g of [[2,1],[1,2],[2,2],[3,2],[2,3]])if(rnd()<.85)S.trees.push({x:x0+g[0]+.5,y:y0+g[1]+.5,v:Math.floor(rnd()*4)});
+ }
+ rebuildGrid();
+ const hs=S.props.filter(p=>p.dist==='hauteurs');for(let i=0;i<7;i++)putForSale(pick(hs));
+ sceneDirty=true;
+}
+function makeDeal(kind){
+ kind=kind||wpick({biz:3,promo:2,franchise:1.4,vc:2,roy:1.6,scpi:.8});
+ const id=++S.ft.nid,r=(a,b)=>a+rnd()*(b-a),R=(v,st)=>Math.round(v/st)*st;
+ if(kind==='biz'){const price=R(r(250e3,1.2e6),10e3),y=r(.13,.22);
+  return {id,kind,ic:'🏭',name:pick(['Réseau de 4 laveries automatiques','Boulangerie avec 3 boutiques','Entreprise de nettoyage (25 salariés)','Camping 3 étoiles','Agence immobilière','Salle d\'escalade','Fabricant de cosmétiques bio','Brasserie artisanale']),price,apport:.3,gross:price*y/12,years:7,risk:y>.19?'élevé':'moyen',
+   d:'Entreprise rentable avec un directeur en place. La banque prête 70 % sur 7 ans : c\'est la boîte qui rembourse son crédit.'};}
+ if(kind==='franchise'){const price=R(r(200e3,450e3),10e3);
+  return {id,kind,ic:'🍔',name:pick(['Franchise de restauration rapide','Franchise de salles de sport','Franchise de coiffure','Franchise de boulangerie-café']),price,apport:.4,gross:price*r(.19,.26)/12,years:7,ramp:8,risk:'moyen',
+   d:'Un concept qui marche déjà ailleurs. 8 mois de lancement, avec des pertes au début, avant le régime de croisière.'};}
+ if(kind==='promo'){const price=R(r(150e3,600e3),10e3);
+  return {id,kind,ic:'🏗️',name:pick(['Résidence de 12 logements','Anciens entrepôts transformés en lofts','Immeuble neuf de 8 appartements'])+' ('+pick(['Port','Gare','Faubourg','Hauteurs'])+')',price,apport:1,months:Math.round(r(16,30)),mult:r(1.22,1.55),risk:'moyen',
+   d:'Tu finances une opération de promotion. Aucun revenu pendant le chantier, puis un gros gain à la livraison… sauf si le chantier dérape.'};}
+ if(kind==='vc'){
+  return {id,kind,ic:'🦄',name:pick(['Start-up de robots agricoles','Application de santé connectée','Start-up de batteries recyclées','Plateforme de coaching en ligne','Start-up de drones de livraison','Start-up de vêtements techniques']),price:pick([25e3,50e3,100e3]),apport:1,risk:'très élevé',
+   d:'Un ticket dans une jeune pousse. La plupart échouent ; une petite partie rapporte 5 à 30 fois la mise. Aucun revenu en attendant.'};}
+ if(kind==='scpi'){const solar=rnd()<.5;
+  return {id,kind,ic:solar?'☀️':'🏢',name:solar?'Parts d\'un parc solaire':'Parts de SCPI de bureaux',price:solar?100e3:50e3,apport:1,yld:solar?r(.055,.068):r(.045,.055),risk:'faible',rep:1,
+   d:'Placement sans gestion : un revenu régulier et prévisible. Rendement modeste, mais tu dors tranquille. Achetable plusieurs fois.'};}
+ const book=rnd()<.5;
+ return {id,kind:'roy',ic:book?'📚':'🎓',name:book?'Écrire un livre de référence':'Créer une formation en ligne',price:book?R(r(12e3,25e3),1e3):R(r(30e3,70e3),1e3),apport:1,base:(book?r(150,1300):r(400,2800))*(rnd()<.35?.15:1),risk:'élevé',
+  d:'Tu crées une fois, tu vends sans limite : c\'est le cashflow d\'audience. Le succès est imprévisible et les ventes s\'érodent lentement.'};
+}
+const dealFees=d=>['biz','franchise','promo'].includes(d.kind)?d.price*.03:0;
+const dealOut=d=>d.price*d.apport+dealFees(d);
+const dealPay=d=>{const debt=d.price*(1-d.apport);return debt?payment(debt,S.rate+.012,(d.years||7)*12):0;};
+const FTLESSON={biz:'Acheter une entreprise qui tourne avec un dirigeant en place, c\'est acheter du cashflow passif. L\'effet de levier est le même qu\'en immobilier : la boîte rembourse le crédit qui a servi à l\'acheter.',
+ franchise:'La franchise réduit le risque (concept éprouvé, marque connue) mais coûte cher : droit d\'entrée et redevances. Prévois la trésorerie des premiers mois.',
+ promo:'Le promoteur gagne la différence entre le prix de vente et le coût (terrain + travaux + frais). C\'est un gain en capital, pas un revenu : il faut le réinvestir.',
+ vc:'En capital-risque, on ne mise jamais tout sur une seule start-up : les fonds en financent des dizaines en comptant sur 1 ou 2 grands succès.',
+ scpi:'Une SCPI mutualise des dizaines d\'immeubles. Moins de rendement qu\'un bien en direct, mais zéro gestion et zéro impayé à gérer toi-même.',
+ roy:'Livres, formations, musique : un actif intellectuel peut rapporter pendant des années. C\'est la forme de revenu passif la plus « scalable » : vendre 10 ou 10 000 exemplaires demande le même travail.'};
+function buyDeal(d){
+ const out=dealOut(d);if(S.P.cash<out){toast('Il te faut '+fmt(out),'a');return;}
+ S.P.cash-=out;
+ if(d.kind==='scpi'){const ex=S.ft.hold.find(x=>x.kind==='scpi'&&x.name===d.name);if(ex){ex.yld=(ex.yld*ex.val+d.yld*d.price)/(ex.val+d.price);ex.invest+=d.price;ex.val+=d.price;ex.cf=ex.val*ex.yld/12;journal('Fast Track : '+d.name+' (+'+fmt(d.price)+')');toast('🌟 Parts ajoutées : '+d.name,'g');return;}}
+ const debt=d.price*(1-d.apport),rate=S.rate+.012;
+ const h={id:++S.ft.nid,kind:d.kind,ic:d.ic,name:d.name,invest:d.price,val:d.price,debt,rate,pay:debt?payment(debt,rate,(d.years||7)*12):0,cf:0,age:0,
+  gross:d.gross||0,base:d.base||0,yld:d.yld||0,months:d.months||0,mult:d.mult||1,ramp:d.ramp||0,trouble:0};
+ if(d.kind==='scpi')h.cf=h.val*h.yld/12;
+ if(d.kind==='biz')h.cf=h.gross-h.pay;
+ if(d.kind==='franchise')h.cf=-.3*h.gross-h.pay;
+ S.ft.hold.push(h);
+ if(!d.rep)S.ft.deals=S.ft.deals.filter(x=>x!==d);
+ journal('Fast Track : '+d.name+' ('+fmt(d.price)+')');toast('🌟 Investi : '+d.name,'g');
+ if(!S.flags['ftl_'+d.kind]&&!auto){S.flags['ftl_'+d.kind]=1;setTimeout(()=>modalMsg(d.ic+' '+d.name,'<div class="lecon">💡 '+FTLESSON[d.kind]+'</div>'),60);}
+}
+function sellHold(h){
+ if(h.kind==='promo'||h.kind==='vc'){toast('Impossible de revendre en cours de route.','a');return;}
+ const net=h.val*(h.kind==='scpi'?.95:.9)-h.debt;
+ if(!confirmBox('Vendre « '+h.name+' » ? Tu touches '+fmt(net)+' nets.'))return;
+ S.P.cash+=net;S.ft.hold=S.ft.hold.filter(x=>x!==h);journal('Vente : '+h.name+' ('+fmt(net)+' nets)');toast('🤝 Vendu : '+h.name+' → '+fmt(net),'g');
+}
+function simHoldings(){
+ const f=S.ft,rec=S.recession>0;
+ for(const h of f.hold.slice()){
+  h.age++;
+  if(h.debt>0){const i=h.debt*h.rate/12;h.debt=Math.max(0,h.debt-(h.pay-i));if(h.debt<1){h.debt=0;toast('🎉 Crédit remboursé : '+h.name+' (+'+fmt(h.pay)+'/mois)','g',6000);}}
+  const pay=h.debt>0?h.pay:0;
+  if(h.kind==='biz'||h.kind==='franchise'){
+   let g=h.gross*(1+gauss()*.07)*(rec?.8:1);
+   if(h.kind==='franchise'&&h.age<=h.ramp)g=h.gross*(-.3+1.3*h.age/h.ramp);
+   if(h.trouble>0){g*=.5;h.trouble--;}else if(h.age>3&&rnd()<.006){h.trouble=8;toast('⚠️ '+h.name+' traverse une mauvaise passe : revenus divisés par 2 pendant 8 mois.','a',7000);}
+   h.cf=g-pay;h.val=h.invest*(h.trouble>0?.75:1)*(rec?.9:1)*(1+.002*Math.min(h.age,120));
+  }else if(h.kind==='promo'){
+   h.months--;h.cf=0;h.val=h.invest*(1+(h.mult-1)*.3*h.age/(h.age+Math.max(0,h.months)));
+   if(h.months<=0){const ok=rnd()>.12,m=ok?h.mult:.65+rnd()*.25,gain=h.invest*m,tax=Math.max(0,gain-h.invest)*.3;S.P.cash+=gain-tax;f.hold=f.hold.filter(x=>x!==h);
+    journal('Promotion livrée : '+h.name+' ('+sg(gain-tax-h.invest)+')');toast(ok?'🏗️ Opération livrée : '+h.name+' → '+fmt(gain-tax)+' nets':'🏗️ Le chantier a dérapé : '+h.name+' → '+fmt(gain)+' récupérés',ok?'g':'a',8000);}
+  }else if(h.kind==='vc'){
+   h.cf=0;
+   if(h.age>6&&rnd()<.016){f.hold=f.hold.filter(x=>x!==h);journal('Faillite de la start-up : '+h.name);toast('💥 '+h.name+' a fait faillite. Ta mise est perdue.','a',7000);}
+   else if(h.age>18&&rnd()<.006){const m=3+rnd()*27,gain=h.invest*m,tax=(gain-h.invest)*.3;S.P.cash+=gain-tax;f.hold=f.hold.filter(x=>x!==h);journal('Revente de la start-up : '+h.name+' ×'+m.toFixed(1));toast('🦄 '+h.name+' est rachetée ! Ta mise ×'+m.toFixed(1).replace('.',',')+' → '+fmt(gain-tax)+' nets','g',9000);buzz([60,40,60,40,160]);}
+  }else if(h.kind==='scpi'){
+   h.val*=1+(rec?-.004:.0018)+gauss()*.003;h.cf=h.val*h.yld/12*(rec?.92:1);
+  }else if(h.kind==='roy'){
+   if(h.age<=3){h.cf=0;h.val=h.invest;}
+   else{if(h.age===4)toast('📚 « '+h.name+' » est sorti : premiers revenus !','g',6000);h.cf=h.base*Math.exp(gauss()*.25);h.base*=.994;h.val=h.base*36;}
+  }
+ }
+}
+function ftMonth(L){
+ const f=S.ft;if(!f)return;
+ if(f.active){let b=1+(HOUSES.find(x=>x.k===f.house)||{b:0}).b+(f.upB||0)+(S.P.job?-1:2);for(const k of f.life){const i=LIFE.find(x=>x.k===k);if(i)b+=i.b;}f.bonheur+=b;f.lastB=b;}
+ f.deals=f.deals.filter(d=>d.rep||rnd()>.2);
+ while(f.deals.length<5)f.deals.push(makeDeal());
+ if(!f.deals.some(d=>d.kind==='scpi'))f.deals.push(makeDeal('scpi'));
+ if(f.loanBack&&month()>=f.loanBack.m){S.P.cash+=f.loanBack.amt;toast('💶 Ta sœur te rembourse '+fmt(f.loanBack.amt)+'.','g');f.loanBack=null;}
+ if(f.scam&&month()>=f.scam){f.scam=0;journal('Arnaque : placement de 100 000 € perdu');modalMsg('🚨 C\'était une arnaque','<p>La société du « placement garanti à 12 % » a disparu avec l\'argent de ses clients. Tes 100 000 € sont perdus.</p><div class="lecon">💡 Avant tout placement : vérifie l\'agrément sur le site de l\'AMF et ses listes noires. Un rendement élevé garanti sans risque n\'existe pas.</div>');}
+ if(f.active){
+  if(L.pas<L.dep){f.neg++;if(f.neg===1)toast('⚠️ Tes dépenses dépassent tes revenus passifs. 3 mois comme ça et tu retombes dans la Rat Race.','a',8000);if(f.neg>=3&&!S.evq.some(e=>e.id==='rechute'))queueEvent('rechute');}
+  else f.neg=0;
+ }
+}
+function dreamProg(){const f=S.ft,d=f&&f.dream;if(!d)return 0;if(d.req){const L=S.lastL;return Math.min(S.P.job?.99:1,clamp(L.pas/(2*Math.max(1,L.dep)),0,1));}return clamp(S.P.cash/d.cost,0,1);}
+function setDream(d){S.ft.dream={...d,due:month()+60};journal('Rêve choisi : '+d.n);}
+function achieveDream(){
+ const f=S.ft,d=f.dream;if(!d)return;
+ if(d.req){if(dreamProg()<1){toast('Pas encore : il faut 2 fois tes dépenses en revenus passifs, sans emploi.','a');return;}}
+ else{if(S.P.cash<d.cost){toast('Il te manque '+fmt(d.cost-S.P.cash),'a');return;}S.P.cash-=d.cost;}
+ const onTime=month()<=d.due;f.bonheur+=d.b+(onTime?40:0);f.upkeep+=d.up||0;f.upB+=d.ub||0;
+ if(d.vc)f.hold.push({id:++f.nid,kind:'vc',ic:'🚀',name:'Ta start-up',invest:d.cost,val:d.cost,debt:0,rate:0,pay:0,cf:0,age:0});
+ f.dreams.push({n:d.n,ic:d.ic,m:month()});f.dream=null;journal('Rêve réalisé : '+d.n);
+ queueEvent('revereal',{d,onTime});queueEvent('reve');
+}
+Object.assign(EV,{
+ reve:{t:'🌟 Quel est ton rêve ?',
+  txt:()=>'<p>'+(S.ft.dreams.length?'Bravo pour ce rêve réalisé. Quel est le prochain ?':'Tu es libre : ton argent travaille pour toi. Il peut maintenant servir à autre chose qu\'à payer des factures.')+'</p><p>Choisis le rêve que ton cashflow va financer. Ta progression s\'affichera en haut de l\'écran, et tu as 5 ans pour l\'atteindre (bonus si tu y arrives à temps).</p>',
+  ch:()=>DREAMS.filter(d=>!S.ft.dreams.some(x=>x.n===d.n)).map(d=>({t:d.ic+' '+d.n+(d.cost?' · '+fmtK(d.cost):''),fx:()=>{setDream(d);return d.d;}}))
+   .concat([{t:'✍️ Un autre rêve, à écrire moi-même',fx:()=>{const n=(String(prompt('Ton rêve :','')||'')).trim().slice(0,40)||'Mon rêve';const c=Math.max(1000,Math.round((parseFloat(String(prompt('Combien coûte-t-il, en euros ?','200000')||'').replace(/\s/g,'').replace(',','.'))||200000)/1000)*1000);setDream({k:'perso',ic:'✨',n,cost:c,b:80,up:0,d:''});return 'Ton rêve : '+n+', pour '+fmt(c)+'. À toi de jouer.';}}]),
+  l:'Dans la Fast Track, l\'argent n\'est plus le but : c\'est un outil au service de tes rêves. Un rêve précis, chiffré et daté devient un objectif.'},
+ revereal:{t:'✨ Rêve réalisé !',
+  txt:c=>'<div style="font-size:58px;text-align:center;line-height:1.2">'+c.d.ic+'</div><p style="text-align:center;font-size:16px"><b>'+c.d.n+'</b></p><p>'+(c.onTime?'Et dans les temps : bonus de bonheur. ':'')+'Bonheur +'+(c.d.b+(c.onTime?40:0))+'.</p>'+(c.d.up?'<p>Ce rêve coûte '+fmt(c.d.up)+' par mois : la somme s\'ajoute à tes dépenses. Surveille ta marge de liberté.</p>':''),
+  ch:()=>[{t:'Magnifique',fx:()=>'Le score de ta Fast Track augmente.'}],
+  l:'Un rêve qui coûte chaque mois augmente aussi tes dépenses. Les riches financent leurs rêves avec leurs revenus passifs, jamais en entamant les actifs qui les produisent.'},
+ rechute:{t:'😱 Retour dans la Rat Race',pre:()=>{S.ft.active=false;S.ft.neg=0;journal('Retour dans la Rat Race');},
+  txt:()=>'<p>Depuis 3 mois, tes dépenses dépassent tes revenus passifs : tu retombes dans la Rat Race.</p><p>Pour revenir dans la Fast Track, il faut que tes revenus passifs couvrent de nouveau tes dépenses.</p>',
+  ch:()=>[{t:'Réduire mon train de vie (tout arrêter)',dis:!S.ft.life.length?'Rien à réduire':0,fx:()=>{S.ft.life=[];return 'Ton train de vie revient à l\'essentiel.';}},{t:'Compris',fx:()=>'Courage, tu connais le chemin.'}],
+  l:'C\'est le piège de l\'inflation du train de vie : chaque hausse de revenus suivie d\'une hausse de dépenses te ramène à la case départ.'},
+ associe:{w:1.2,cond:()=>ftOn()&&S.ft.hold.some(h=>h.kind==='biz'),make:()=>({h:pick(S.ft.hold.filter(h=>h.kind==='biz'))}),t:'Ton associé veut sortir',
+  txt:c=>`<p>Le directeur associé de <b>${c.h.name}</b> veut vendre ses parts et partir.</p>`,
+  ch:c=>{const cost=Math.round(c.h.invest*.25/1000)*1000;return [
+   {t:'Racheter ses parts ('+fmt(cost)+')',dis:S.P.cash<cost?'Trésorerie insuffisante':0,fx:()=>{S.P.cash-=cost;c.h.gross*=1.25;c.h.invest+=cost;return 'Tu détiens plus de parts : revenus +25 %.';}},
+   {t:'Recruter un nouveau directeur (6 mois de transition)',fx:()=>{c.h.trouble=6;return 'Les revenus baissent le temps de la transition.';}},
+   {t:'Vendre toute l\'entreprise avec lui',fx:()=>{const net=c.h.val-c.h.debt;S.P.cash+=net;S.ft.hold=S.ft.hold.filter(x=>x!==c.h);return 'Vendu : '+fmt(net)+' nets.';}}];},
+  l:'Une entreprise vaut ce que vaut son équipe dirigeante. Un pacte d\'associés bien rédigé prévoit d\'avance comment se passent les départs.'},
+ controle:{w:.8,cond:()=>ftOn()&&ftHoldVal()>200000&&!(S.flags.ctrl>month()-36),pre:()=>{S.flags.ctrl=month();},t:'Contrôle fiscal',
+  txt:()=>'<p>L\'administration fiscale contrôle tes sociétés et tes montages des trois dernières années.</p>',
+  ch:()=>{const v=Math.round(ftHoldVal()*.025);return [
+   {t:'Accepter le redressement ('+fmt(v)+')',fx:()=>{S.P.cash-=v;return 'Dossier clos.';}},
+   {t:'Prendre un avocat fiscaliste (9 000 €)',fx:()=>{S.P.cash-=9000;if(rnd()<.7)return 'Ton avocat démontre que tout était en règle : aucun redressement.';S.P.cash-=v*1.2;return 'Raté : redressement et pénalités ('+fmt(v*1.2)+').';}}];},
+  l:'Optimiser ses impôts est légal, frauder ne l\'est pas. Un montage doit avoir une vraie raison économique et être documenté.'},
+ famille:{w:1,cond:()=>ftOn()&&S.P.cash>40000&&!S.ft.loanBack,t:'Ta famille a besoin d\'aide',
+  txt:()=>'<p>Ta sœur a besoin de <b>30 000 €</b> pour l\'apport de son premier appartement.</p>',
+  ch:()=>[{t:'Lui donner',fx:()=>{S.P.cash-=30000;S.ft.bonheur+=35;return 'Elle est aux anges. Bonheur +35.';}},
+   {t:'Lui prêter (remboursé dans 2 ans)',fx:()=>{S.P.cash-=30000;S.ft.loanBack={m:month()+24,amt:30000};S.ft.bonheur+=15;return 'Elle te remboursera dans 2 ans. Bonheur +15.';}},
+   {t:'Refuser',fx:()=>{S.ft.bonheur-=15;return 'Le repas de famille est tendu. Bonheur −15.';}}],
+  l:'Chaque parent peut donner 100 000 € à chaque enfant tous les 15 ans sans droits de donation ; entre frères et sœurs, l\'abattement est de 15 932 €. Un prêt familial gagne à être écrit (reconnaissance de dette).'},
+ mecene:{w:1,cond:()=>ftOn(),t:'Un club cherche un mécène',
+  txt:()=>'<p>Le club de trail des enfants de la ville cherche <b>20 000 €</b> pour un minibus et des stages.</p>',
+  ch:()=>[{t:'Financer le club',dis:S.P.cash<20000?'Trésorerie insuffisante':0,fx:()=>{S.P.cash-=20000;S.ft.bonheur+=45;return 'Les enfants partent en stage cet été. Bonheur +45.';}},
+   {t:'Donner 5 000 €',fx:()=>{S.P.cash-=5000;S.ft.bonheur+=12;return 'Merci ! Bonheur +12.';}},{t:'Pas cette fois',fx:()=>'D\'accord.'}],
+  l:'Un don à une association d\'intérêt général ouvre droit à une réduction d\'impôt de 66 % du montant, dans la limite de 20 % du revenu imposable.'},
+ yacht:{w:.8,cond:()=>ftOn()&&!S.flags.yacht,pre:()=>{S.flags.yacht=1;},t:'Le yacht de tes rêves… ou pas',
+  txt:()=>'<p>Un courtier te propose un yacht de 24 m à <b>1,2 M€</b>, financé à 100 % sur 10 ans. Entretien : 8 000 € par mois.</p>',
+  ch:()=>[{t:'Signer',fx:()=>{newLoan('Crédit yacht',1200000,S.rate+.02,120,'perso');S.ft.upkeep+=8000;S.ft.bonheur+=40;return 'Superbe… et environ 20 000 € de dépenses en plus chaque mois.';}},
+   {t:'Louer un yacht une semaine par an (30 000 €)',fx:()=>{S.P.cash-=30000;S.ft.bonheur+=20;return 'Le plaisir sans les charges. Bonheur +20.';}},{t:'Non merci',fx:()=>'Ta marge de liberté reste intacte.'}],
+  l:'Ce qui flotte, vole ou roule se loue. Un passif de luxe financé à crédit peut te renvoyer dans la Rat Race en quelques mois.'},
+ arnaque:{w:.8,cond:()=>ftOn()&&S.P.cash>120000&&!S.flags.arnaque,pre:()=>{S.flags.arnaque=1;},t:'Un placement garanti à 12 %',
+  txt:()=>'<p>Un conseiller très élégant te propose un placement « garanti 12 % par an, sans risque » dans des grands vins.</p>',
+  ch:()=>[{t:'Placer 100 000 €',fx:()=>{S.P.cash-=100000;S.ft.scam=month()+5;return 'Les premiers relevés sont superbes…';}},
+   {t:'Vérifier sur les listes noires de l\'AMF',fx:()=>{S.ft.bonheur+=5;return 'La société y figure. Tu viens d\'éviter une arnaque.';}},{t:'Décliner',fx:()=>'Prudent.'}],
+  l:'Rendement élevé = risque élevé. Un placement « garanti et sans risque » à 12 % n\'existe pas. Vérifie toujours les listes noires de l\'AMF avant d\'investir.'},
+ criseH:{w:.6,cond:()=>ftOn()&&month()-S.ft.since>12&&!(S.flags.criseH>month()-48),pre:()=>{S.flags.criseH=month();S.di.hauteurs*=.82;},t:'📰 Krach de l\'immobilier de luxe',
+  txt:()=>'<p>Les prix aux Hauteurs chutent de 18 % : les acheteurs étrangers ont disparu.</p>',
+  ch:()=>[{t:'Voir les annonces : c\'est les soldes',fx:()=>{setTimeout(()=>openPanel('annonces'),80);return 'Les vendeurs pressés baissent leurs prix.';}},{t:'Attendre',fx:()=>'Tu ne vends pas au plus bas.'}],
+  l:'Le luxe est le marché le plus volatil. Tant que tu ne vends pas et que les loyers rentrent, la baisse reste sur le papier.'},
+ holding:{w:.9,cond:()=>ftOn()&&!S.flags.holding&&S.ft.hold.some(h=>h.kind==='biz'||h.kind==='franchise'),pre:()=>{S.flags.holding=1;},t:'Créer une holding ?',
+  txt:()=>'<p>Ton expert-comptable propose de regrouper tes entreprises dans une holding.</p>',
+  ch:()=>[{t:'Créer la holding (5 000 €)',fx:()=>{S.P.cash-=5000;for(const h of S.ft.hold)if(h.kind==='biz'||h.kind==='franchise')h.gross*=1.06;return 'Les bénéfices remontent presque sans impôt et se réinvestissent : revenus des entreprises +6 %.';}},{t:'Non, rester simple',fx:()=>'D\'accord.'}],
+  l:'Avec une holding, les dividendes des filiales remontent quasiment sans impôt (régime mère-fille : 95 % exonérés) et peuvent être réinvestis. L\'impôt personnel ne tombe que quand tu sors l\'argent pour toi.'}
+});
+/* ---------- panneau Fast Track ---------- */
+let ftTab='reve';
+const RISKC={'faible':'bm','moyen':'bv','élevé':'ba','très élevé':'ba'};
+function pFast(){
+ const f=S.ft,L=S.lastL;
+ if(!f)return '<div class="ftlock"><div style="font-size:44px">🔒</div><h2>La Fast Track</h2><p>Elle s\'ouvre quand tes revenus passifs dépassent tes dépenses. Là-bas : un quartier de luxe, les grandes affaires (rachats d\'entreprises, promotion immobilière, capital-risque, droits d\'auteur) et ton rêve à financer.</p></div>'
+  +'<div class="cols" style="grid-template-columns:1fr"><div><div class="ln"><span>Revenus passifs</span><b>'+fmt(L.pas)+'</b></div><div class="ln"><span>Dépenses</span><b>'+fmt(L.dep)+'</b></div><div class="rep big2"><i style="width:'+clamp(L.pas/Math.max(1,L.dep)*100,0,100)+'%"></i></div></div></div>'
+  +'<div class="lecon">💡 Dans le jeu CASHFLOW de Kiyosaki, la Fast Track est le cercle extérieur du plateau : on n\'y joue plus pour payer ses factures, mais pour réaliser ses rêves.</div>';
+ const marge=L.pas-L.dep;
+ let h='<div class="ftsum"><div><small>Statut</small><b>'+(f.active?'🌟 Fast Track':'⚠️ Rat Race')+'</b></div><div><small>Marge de liberté</small><b class="'+(marge>=0?'pos':'neg')+'">'+sg(marge)+'</b></div><div><small>Bonheur</small><b>😊 '+Math.round(f.bonheur)+' <span class="k" style="font-weight:500;font-size:11px">'+(f.lastB>=0?'+':'')+f.lastB+'/mois</span></b></div><div><small>Score</small><b>🏅 '+ftScore().toLocaleString('fr-FR')+'</b></div></div>';
+ h+='<div class="seg">'+[['reve','🌟 Rêve'],['affaires','💼 Affaires'],['vie','🏡 Ma vie'],['portef','📂 Placements']].map(t=>'<button data-act="fttab" data-t="'+t[0]+'" class="'+(ftTab===t[0]?'on':'')+'">'+t[1]+'</button>').join('')+'</div>';
+ if(ftTab==='reve'){
+  const d=f.dream;
+  if(d){const pr=dreamProg();
+   h+='<div class="dream"><div class="dic">'+d.ic+'</div><div style="flex:1;min-width:0"><b style="font-size:15px">'+d.n+'</b><div class="k">'+(d.req?'Revenus passifs ≥ 2 × dépenses, sans salaire':'Coût : '+fmt(d.cost)+(d.up?' · puis '+fmt(d.up)+'/mois':''))+'</div><div class="rep big2"><i style="width:'+pr*100+'%"></i></div><div class="k">'+Math.floor(pr*100)+' % · objectif : '+dateStr(d.due*30)+(month()>d.due?' (dépassé)':'')+'</div></div></div>';
+   h+='<div class="btns row"><button class="btn go" data-act="ftach" '+(pr<1?'disabled':'')+'>✨ Réaliser mon rêve</button><button class="btn" data-act="ftnew">Changer de rêve</button></div>';
+  }else h+='<p>Tu n\'as pas encore choisi de rêve.</p><div class="btns"><button class="btn go" data-act="ftnew">🌟 Choisir mon rêve</button></div>';
+  if(f.dreams.length)h+='<h4>Rêves réalisés</h4>'+f.dreams.map(x=>'<div class="ln"><span>'+x.ic+' '+x.n+'</span><span class="k">'+dateStr(x.m*30)+'</span></div>').join('');
+  h+='<div class="lecon">💡 Pour avancer vers ton rêve : investis dans les 💼 Affaires pour augmenter tes revenus passifs, et garde une marge de liberté positive. Ton rêve se paie avec ta trésorerie.</div>';
+ }else if(ftTab==='affaires'){
+  h+='<p class="k">Les grandes affaires changent chaque mois. Trésorerie : <b>'+fmt(S.P.cash)+'</b> · Taux : <b>'+pct(S.rate+.012,2)+'</b></p><div class="cards">';
+  for(const d of f.deals){const out=dealOut(d),pay=dealPay(d);let k3;
+   if(d.kind==='biz')k3=['Cashflow/mois',sg(d.gross-pay),d.gross-pay>=0];
+   else if(d.kind==='franchise')k3=['Cashflow visé',sg(d.gross-pay),d.gross-pay>=0];
+   else if(d.kind==='promo')k3=['Gain visé','×'+d.mult.toFixed(2).replace('.',',')+' · '+d.months+' m',1];
+   else if(d.kind==='vc')k3=['Pari','×0 à ×30',1];
+   else if(d.kind==='scpi')k3=['Cashflow/mois',sg(d.price*d.yld/12),1];
+   else k3=['Droits/mois','?',1];
+   h+='<div class="pc"><div class="h2"><span>'+d.ic+' '+d.name+'</span><span class="badge '+RISKC[d.risk]+'">'+d.risk+'</span></div><div class="sub">'+d.d+'</div>'
+    +'<div class="kpi"><div><small>Prix</small><b>'+fmtK(d.price)+'</b></div><div><small>À sortir</small><b>'+fmtK(out)+'</b></div><div><small>'+k3[0]+'</small><b class="'+(k3[2]?'pos':'neg')+'">'+k3[1]+'</b></div></div>'
+    +'<div class="bb"><button class="mini go" data-act="ftbuy" data-id="'+d.id+'" '+(S.P.cash<out?'disabled':'')+'>'+(S.P.cash<out?'Il te manque '+fmtK(out-S.P.cash):'Investir '+fmtK(out))+'</button></div></div>';}
+  h+='</div><div class="lecon">💡 Les entreprises et franchises sont financées à crédit : la mensualité est déjà retirée du cashflow affiché. Promotion et capital-risque rapportent un gain en capital plus tard, pas un revenu mensuel. Les revenus sont présentés nets d\'impôt.</div>';
+ }else if(ftTab==='vie'){
+  h+='<h4 style="margin-top:0">Ton logement</h4><div class="cards">';
+  for(const o of HOUSES){const cur=f.house===o.k,c=o.c==null?f.baseRent:o.c;
+   h+='<div class="pc'+(cur?' cur':'')+'"><div class="h2"><span>'+o.ic+' '+o.n+'</span>'+(cur?'<span class="badge bm">actuel</span>':'')+'</div><div class="kpi"><div><small>Loyer</small><b>'+fmtK(c)+'</b></div><div><small>Bonheur</small><b>+'+o.b+'/mois</b></div><div><small>Déménagement</small><b>'+(cur?'—':'4 000 €')+'</b></div></div>'
+    +(cur?'':'<div class="bb"><button class="mini" data-act="fthouse" data-k="'+o.k+'" '+(S.P.home?'disabled':'')+'>'+(S.P.home?'Tu habites ton propre bien':'Déménager ici')+'</button></div>')+'</div>';}
+  h+='</div><h4>Ton train de vie</h4><div class="cards">'+LIFE.map(i=>{const on=f.life.includes(i.k);return '<div class="pc'+(on?' cur':'')+'"><div class="h2"><span>'+i.ic+' '+i.n+'</span><button class="mini '+(on?'go':'')+'" data-act="ftlife" data-k="'+i.k+'">'+(on?'✓ Oui':'Non')+'</button></div><div class="sub" style="margin-top:0">'+fmt(i.c)+'/mois · bonheur +'+i.b+'/mois</div></div>';}).join('')+'</div>';
+  h+='<div class="'+(marge>=0?'lecon':'res')+'">'+(marge>=0?'✅ Avec ces choix, il te reste <b>'+sg(marge)+'</b> par mois de marge de liberté.':'⚠️ Avec ces choix, tes dépenses dépassent tes revenus passifs de <b>'+fmt(-marge)+'</b> par mois. Dans 3 mois, retour à la Rat Race.')+'</div>';
+  if(S.P.job)h+='<div class="btns row"><button class="btn" data-act="quit">Démissionner de mon emploi (bonheur +3/mois)</button></div>';
+  h+='<div class="lecon">💡 Le bonheur vient surtout du temps libre, de la santé et des autres. Augmenter ses dépenses n\'est pas interdit : vérifie juste que tes revenus passifs suivent.</div>';
+ }else{
+  if(!f.hold.length)h+='<p class="k">Aucun placement Fast Track pour l\'instant. Va voir les 💼 Affaires.</p>';
+  h+='<div class="cards">'+f.hold.map(x=>{const st=x.kind==='promo'?'Livraison dans '+Math.max(0,x.months)+' mois':x.kind==='vc'?'Depuis '+x.age+' mois · issue incertaine':x.kind==='roy'&&x.age<=3?'En création ('+(4-x.age)+' mois)':x.trouble>0?'⚠️ Mauvaise passe ('+x.trouble+' mois)':x.kind==='franchise'&&x.age<=x.ramp?'Lancement ('+x.age+'/'+x.ramp+' mois)':'En régime de croisière';
+   return '<div class="pc"><div class="h2"><span>'+x.ic+' '+x.name+'</span></div><div class="sub">'+st+'</div><div class="kpi"><div><small>Valeur</small><b>'+fmtK(x.val)+'</b></div><div><small>Crédit</small><b>'+(x.debt?fmtK(x.debt):'—')+'</b></div><div><small>Cashflow/mois</small><b class="'+(x.cf>=0?'pos':'neg')+'">'+sg(x.cf)+'</b></div></div>'
+    +(x.kind==='promo'||x.kind==='vc'?'':'<div class="bb"><button class="mini" data-act="ftsell" data-id="'+x.id+'">Vendre ('+fmtK(x.val*(x.kind==='scpi'?.95:.9)-x.debt)+' nets)</button></div>')+'</div>';}).join('')+'</div>';
+  if(f.hold.length)h+='<div class="cols" style="grid-template-columns:1fr;margin-top:10px"><div><div class="ln t"><span>Total des placements Fast Track</span><span>'+fmt(ftHoldVal())+'</span></div><div class="ln"><span>Cashflow mensuel</span><span class="'+(L.ftCf>=0?'pos':'neg')+'">'+sg(L.ftCf)+'</span></div></div></div>';
+ }
+ return h;
+}
+function ftAction(a,d){
+ const f=S.ft;
+ switch(a){
+  case 'fttab':ftTab=d.t;return true;
+  case 'ftbuy':{const dl=f.deals.find(x=>x.id===+d.id);if(!dl)return true;if(!confirmBox('Investir '+fmt(dealOut(dl))+' dans « '+dl.name+' » ?'))return true;buyDeal(dl);return true;}
+  case 'ftsell':{const h=f.hold.find(x=>x.id===+d.id);if(h)sellHold(h);return true;}
+  case 'ftlife':{const i=f.life.indexOf(d.k);if(i>=0)f.life.splice(i,1);else{f.life.push(d.k);buzz(10);}return true;}
+  case 'fthouse':{if(S.P.home)return true;if(S.P.cash<4000){toast('Il te faut 4 000 € pour déménager','a');return true;}const o=HOUSES.find(x=>x.k===d.k);S.P.cash-=4000;f.house=o.k;S.P.logement=o.c==null?f.baseRent:o.c;journal('Déménagement : '+o.n);toast('📦 Tu emménages : '+o.n,'g');return true;}
+  case 'ftach':achieveDream();closePanel();return 'stop';
+  case 'ftnew':queueEvent('reve');closePanel();return 'stop';
+ }
+ return false;
+}
+
 function randomEvent(){
  const c=[];for(const id in EV){const e=EV[id];if(!e.w)continue;if(e.cond&&!e.cond())continue;c.push(id);}
  if(!c.length)return null;
  const o={};for(const id of c)o[id]=EV[id].w;const id=wpick(o);
- const ctx=EV[id].make?EV[id].make():{};if(ctx&&ctx.prop===undefined&&EV[id].make&&!ctx.prix&&!ctx.r)return null;
+ const ctx=EV[id].make?EV[id].make():{};if(ctx&&ctx.prop===undefined&&EV[id].make&&!ctx.prix&&!ctx.r&&!ctx.h)return null;
  return {id,ctx};
 }
 function queueEvent(id,ctx){S.evq.push({id,ctx:ctx||{}});}
@@ -884,21 +1192,24 @@ function drawGround(g){
     g.stroke();g.setLineDash([]);}
   }else{
    const bx=Math.floor((x-1)/6),by=Math.floor((y-1)/6),d=distOf(bx,by);
-   const c=d==='centre'?['#a9a69d','#aeaba2']:d==='faubourg'?['#7e9f55','#84a55a']:['#89aa5e','#8daf62'];
+   const c=d==='hauteurs'?(S.ft?['#6fb35a','#76ba60']:['#4c6b46','#52714b']):d==='centre'?['#a9a69d','#aeaba2']:d==='faubourg'?['#7e9f55','#84a55a']:['#89aa5e','#8daf62'];
    poly(g,q,c[(x*7+y*3)%2],c[0]);
    if(d!=='centre')for(let k=0;k<3;k++){const q2=P(x+((x*31+y*17+k*7)%10)/10,y+((x*13+y*29+k*11)%10)/10);g.fillStyle=k?'rgba(40,72,30,.32)':'rgba(190,220,140,.35)';g.fillRect(q2[0]-1.2,q2[1]-.6,2.4,1.2);}
   }
  }
  // trottoirs
- for(let by=0;by<4;by++)for(let bx=0;bx<4;bx++){const x0=1+bx*6,y0=1+by*6,o=tileQ(x0,y0,5),n=tileQ(x0+.11,y0+.11,4.78);
+ for(let by=0;by<4;by++)for(let bx=0;bx<5;bx++){const x0=1+bx*6,y0=1+by*6,o=tileQ(x0,y0,5),n=tileQ(x0+.11,y0+.11,4.78);
   g.beginPath();g.moveTo(o[0][0],o[0][1]);for(const q of o.slice(1))g.lineTo(q[0],q[1]);g.closePath();g.moveTo(n[0][0],n[0][1]);for(const q of n.slice(1))g.lineTo(q[0],q[1]);g.closePath();
   g.fillStyle='#cdc8bc';g.fill('evenodd');poly(g,o,null,'rgba(0,0,0,.28)');}
  // passages piétons
- for(let Y=0;Y<=24;Y+=6)for(let X=0;X<=24;X+=6)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const tx=X+dx,ty=Y+dy;if(tx<0||ty<0||tx>=W||ty>=H)continue;
+ for(let Y=0;Y<=H-1;Y+=6)for(let X=0;X<=W-1;X+=6)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const tx=X+dx,ty=Y+dy;if(tx<0||ty<0||tx>=W||ty>=H)continue;
   for(let k=0;k<5;k++){const a=.1+k*.17;let q;
    if(dx){const xs=dx>0?tx+.06:tx+.64;q=[P(xs,ty+a),P(xs+.3,ty+a),P(xs+.3,ty+a+.09),P(xs,ty+a+.09)];}
    else{const ys=dy>0?ty+.06:ty+.64;q=[P(tx+a,ys),P(tx+a+.09,ys),P(tx+a+.09,ys+.3),P(tx+a,ys+.3)];}
    poly(g,q,'rgba(245,245,235,.8)');}}
+ if(!S.ft){const c=P(27.5,12.5);g.save();g.font='800 22px system-ui,"DejaVu Sans",sans-serif';g.textAlign='center';const t1='🔒 LES HAUTEURS',w1=g.measureText(t1).width+40;
+  g.fillStyle='rgba(12,18,28,.88)';g.beginPath();if(g.roundRect)g.roundRect(c[0]-w1/2,c[1]-42,w1,66,16);else g.rect(c[0]-w1/2,c[1]-42,w1,66);g.fill();g.strokeStyle='rgba(245,196,81,.75)';g.lineWidth=2;g.stroke();
+  g.fillStyle='#f5c451';g.fillText(t1,c[0],c[1]-11);g.font='600 13px system-ui,"DejaVu Sans",sans-serif';g.fillStyle='#cfdbe6';g.fillText('Réservé aux joueurs de la Fast Track',c[0],c[1]+12);g.restore();}
  // quai
  g.strokeStyle='#cfc7b4';g.lineWidth=3;const a=P(-1,0),b=P(W+1,0);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
 }
@@ -926,6 +1237,7 @@ function wins(g,b,floors,per,col,z0,fh){
 }
 function pyramid(g,b,rh,col){const c=[(b.T[0]+b.B[0])/2,(b.T[1]+b.B[1])/2-b.h-rh];lgErase([up(b.L,b.h),up(b.B,b.h),up(b.R,b.h),c]);
  poly(g,[up(b.L,b.h),up(b.B,b.h),c],shade(col,.8),'rgba(0,0,0,.3)');poly(g,[up(b.B,b.h),up(b.R,b.h),c],col,'rgba(0,0,0,.3)');}
+function bigLabel(g,b,h,txt,bg,fg){g.font='bold 10px system-ui,"DejaVu Sans",sans-serif';g.textAlign='center';const w=g.measureText(txt).width+12;const sp=fp(b.B,b.R,.5,h+4);g.fillStyle=bg;g.fillRect(sp[0]-w/2,sp[1]-12,w,14);g.fillStyle=fg;g.fillText(txt,sp[0],sp[1]-1.5);}
 function flag(g,pt,col){g.strokeStyle='#333';g.lineWidth=1.5;g.beginPath();g.moveTo(pt[0],pt[1]);g.lineTo(pt[0],pt[1]-16);g.stroke();g.fillStyle=col;g.beginPath();g.moveTo(pt[0],pt[1]-16);g.lineTo(pt[0]+11,pt[1]-12.5);g.lineTo(pt[0],pt[1]-9);g.fill();}
 function sign(g,pt,txt,bg,fg){g.font='bold 8px "DejaVu Sans",sans-serif';const w=g.measureText(txt).width+6;g.fillStyle='#4a3a2a';g.fillRect(pt[0]-1,pt[1]-14,2,14);g.fillStyle=bg;g.fillRect(pt[0]-w/2,pt[1]-24,w,11);g.strokeStyle='rgba(0,0,0,.5)';g.strokeRect(pt[0]-w/2+.5,pt[1]-23.5,w-1,10);g.fillStyle=fg||'#111';g.textAlign='center';g.fillText(txt,pt[0],pt[1]-15.5);}
 function tree(g,x,y,v,s){const p=P(x,y);s=s||1;g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(p[0],p[1],9*s,4*s,0,0,7);g.fill();g.fillStyle='#5b3b1e';g.fillRect(p[0]-1.5,p[1]-11*s,3,11*s);const gs=['#2f6b2a','#38792f','#2a5f26','#43853a'];g.fillStyle=gs[v];g.beginPath();g.arc(p[0],p[1]-19*s,9*s,0,7);g.fill();g.fillStyle=gs[(v+1)%4];g.beginPath();g.arc(p[0]-5*s,p[1]-13*s,6*s,0,7);g.arc(p[0]+5*s,p[1]-14*s,6*s,0,7);g.fill();}
@@ -970,6 +1282,23 @@ function drawProp(g,p){
   case 'terrain':{poly(g,base,'#b59a6a');for(let i=0;i<6;i++){const q=P(x0+.3+((i*37)%10)/7,y0+.3+((i*53)%10)/7);g.fillStyle='#7e9f55';g.fillRect(q[0]-3,q[1]-2,6,3);}top=P(x0+1,y0+1);break;}
   case 'parc':{poly(g,base,'#6fa24c');const f=P(x0+1,y0+1);g.fillStyle='#d8d2c0';g.beginPath();g.ellipse(f[0],f[1],18,9,0,0,7);g.fill();g.fillStyle='#4fb3d9';g.beginPath();g.ellipse(f[0],f[1]-1,12,6,0,0,7);g.fill();
    for(const o of [[.35,.35],[1.65,.4],[.4,1.6],[1.6,1.65]])tree(g,x0+o[0],y0+o[1],(o[0]*3|0)%4);top=f;break;}
+  case 'villa':{poly(g,base,'#6fae5a');g.strokeStyle='#3f7a35';g.lineWidth=2;poly(g,base,null,null);g.stroke();
+   poly(g,tileQ(x0+1.18,y0+.16,.66),'#eef2f4');{const pq=tileQ(x0+1.25,y0+.23,.52);poly(g,pq,'#36b4e6');if(LG)poly(LG,pq,'rgba(80,200,255,.6)');}
+   b=box(g,x0+.2,y0+.35,x0+1.1,y0+1.75,20,'#f3f0e8','#d9d4c8');wins(g,b,1,3,'#2d4660',6,13);
+   const b2=box(g,x0+.38,y0+.8,x0+1.02,y0+1.62,38,'#faf8f3','#e2ddd2');
+   for(const [A,B2] of [[b2.L,b2.B],[b2.B,b2.R]]){const q=[fp(A,B2,.1,24),fp(A,B2,.9,24),fp(A,B2,.9,34),fp(A,B2,.1,34)];poly(g,q,'#2d4660');if(LG&&p.v%2===0)poly(LG,q,'rgba(255,214,140,.9)');}
+   tree(g,x0+1.65,y0+1.45,p.v,.95);tree(g,x0+.15,y0+.25,(p.v+1)%4,.75);top=up(b2.T,38);break;}
+  case 'loft':{const m=.12;b=box(g,x0+m,y0+m,x0+s-m,y0+s-m,t.h,'#b8644a','#8c8a86');wins(g,b,Math.floor(t.h/18),2,'#253545',6,18);top=up(b.T,t.h);break;}
+  case 'hotel':{const m=.12;b=box(g,x0+m,y0+m,x0+s-m,y0+s-m,t.h,'#efe6d6','#b9ad98');wins(g,b,Math.floor(t.h/12),5,'#2b3f55',6,12);
+   bigLabel(g,b,t.h,'HÔTEL','#7a1f2b','#f5d58a');top=null;break;}
+  case 'mall':{const m=.1;b=box(g,x0+m,y0+m,x0+s-m,y0+s-m,t.h,'#dcd6cc','#a9b4bd');
+   for(const [A,B2] of [[b.L,b.B],[b.B,b.R]]){const q=[fp(A,B2,.05,6),fp(A,B2,.95,6),fp(A,B2,.95,24),fp(A,B2,.05,24)];poly(g,q,'#8fc1df');if(LG)poly(LG,q,'rgba(255,225,170,.85)');}
+   bigLabel(g,b,t.h,'CENTRE COMMERCIAL','#1f2d3a','#f5c451');top=null;break;}
+  case 'tour':{const m=.22;b=box(g,x0+m,y0+m,x0+s-m,y0+s-m,t.h,'#5f8fb0','#3e6a8a');
+   for(const [A,B2] of [[b.L,b.B],[b.B,b.R]])for(let f=0;f<Math.floor(t.h/9);f++){const q=[fp(A,B2,.03,4+f*9),fp(A,B2,.97,4+f*9),fp(A,B2,.97,9+f*9),fp(A,B2,.03,9+f*9)];poly(g,q,f%4===1?'#cfe8f8':'#3d6684');if(LG&&(f+p.v+(A===b.L?1:0))%3)poly(LG,q,'rgba(190,228,255,.5)');}
+   const c=[(b.T[0]+b.B[0])/2,(b.T[1]+b.B[1])/2-t.h];g.strokeStyle='#8a9aa8';g.lineWidth=2;g.beginPath();g.moveTo(c[0],c[1]);g.lineTo(c[0],c[1]-34);g.stroke();g.fillStyle='#ff4d4d';g.beginPath();g.arc(c[0],c[1]-35,2.5,0,7);g.fill();
+   if(LG){LG.fillStyle='rgba(255,80,80,.95)';LG.beginPath();LG.arc(c[0],c[1]-35,4,0,7);LG.fill();}
+   top=null;break;}
   case 'banque':case 'bourse':case 'mairie':case 'gare':{
    const m=.12,wc={banque:'#e6e0d2',bourse:'#d9d2c3',mairie:'#efe6d1',gare:'#d7c8ae'}[p.type];
    b=box(g,x0+m,y0+m,x0+s-m,y0+s-m,t.h,wc,'#9a958a');
@@ -993,7 +1322,7 @@ function drawProp(g,p){
  else if(p.owner===0&&p.renting&&!p.tenant&&!p.renov&&!p.build&&isRentable(p)&&p.biz==null)sign(g,front,'À LOUER','#3498db','#fff');
  if(p.biz!=null&&b){const a=ACT[p.biz===0?S.comp&&S.comp.act:(S.rivals[p.biz-1].biz||{}).act];if(a){const c=up(b.B,b.h+16);g.font='16px "Noto Color Emoji","DejaVu Sans",sans-serif';g.textAlign='center';g.fillText(a.ic,c[0],c[1]);}}
 }
-const LAMPS=[];for(let by=0;by<4;by++)for(let bx=0;bx<4;bx++){const x0=1+bx*6,y0=1+by*6;LAMPS.push([x0-.2,y0-.2],[x0+5.2,y0-.2],[x0-.2,y0+5.2],[x0+5.2,y0+5.2]);}
+const LAMPS=[];for(let by=0;by<4;by++)for(let bx=0;bx<5;bx++){const x0=1+bx*6,y0=1+by*6;LAMPS.push([x0-.2,y0-.2],[x0+5.2,y0-.2],[x0-.2,y0+5.2],[x0+5.2,y0+5.2]);}
 function lamp(g,x,y){const p=P(x,y);g.strokeStyle='#28313a';g.lineWidth=1.6;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(p[0],p[1]-20);g.lineTo(p[0]+4,p[1]-22);g.stroke();g.fillStyle='#f4e7c4';g.fillRect(p[0]+3,p[1]-23,4.5,2.6);
  if(LG){const sp=glowSpr();LG.globalAlpha=.6;LG.drawImage(sp,p[0]-34,p[1]-14,68,30);LG.globalAlpha=1;LG.drawImage(sp,p[0]-9,p[1]-36,28,28);}}
 function hull(pts){pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],hi=[];
@@ -1020,17 +1349,17 @@ function buildScene(){
 }
 /* voitures et passants */
 function initCars(){cars=[];const C=['#c0392b','#2980b9','#f1c40f','#ecf0f1','#27ae60','#8e44ad','#e67e22','#34495e'];
- for(let i=0;i<22;i++){const k=Math.floor(rnd()*5)*6+.5;const hz=rnd()<.5;const t=.5+Math.floor(rnd()*24)+.0;cars.push({x:hz?t:k,y:hz?k:t,dx:hz?(rnd()<.5?1:-1):0,dy:hz?0:(rnd()<.5?1:-1),sp:1.2+rnd()*1.2,col:pick(C)});}}
+ for(let i=0;i<26;i++){const hz=rnd()<.5;const k=Math.floor(rnd()*(hz?5:6))*6+.5;const t=.5+Math.floor(rnd()*(hz?W-1:H-1));cars.push({x:hz?t:k,y:hz?k:t,dx:hz?(rnd()<.5?1:-1):0,dy:hz?0:(rnd()<.5?1:-1),sp:1.2+rnd()*1.2,col:pick(C)});}}
 function moveCars(dt){
  for(const c of cars){
   const ox=c.x,oy=c.y;c.x+=c.dx*c.sp*dt;c.y+=c.dy*c.sp*dt;
   const nx=Math.round((c.x-.5)/6)*6+.5,ny=Math.round((c.y-.5)/6)*6+.5;
   const crossed=(c.dx&&(ox-nx)*(c.x-nx)<=0&&Math.abs(c.y-ny)<.01)||(c.dy&&(oy-ny)*(c.y-ny)<=0&&Math.abs(c.x-nx)<.01);
-  if(crossed&&Math.abs(nx-.5)<=24.1&&Math.abs(ny-.5)<=24.1){
-   const opts=[[1,0],[-1,0],[0,1],[0,-1]].filter(d=>!(d[0]===-c.dx&&d[1]===-c.dy)&&nx+d[0]*3>=0&&nx+d[0]*3<=25&&ny+d[1]*3>=0&&ny+d[1]*3<=25);
+  if(crossed&&nx<=W-.4&&ny<=H-.4){
+   const opts=[[1,0],[-1,0],[0,1],[0,-1]].filter(d=>!(d[0]===-c.dx&&d[1]===-c.dy)&&nx+d[0]*3>=0&&nx+d[0]*3<=W&&ny+d[1]*3>=0&&ny+d[1]*3<=H);
    const d=pick(opts);c.x=nx;c.y=ny;c.dx=d[0];c.dy=d[1];
   }
-  if(c.x<.5||c.x>24.5||c.y<.5||c.y>24.5){c.dx=-c.dx;c.dy=-c.dy;c.x=clamp(c.x,.5,24.5);c.y=clamp(c.y,.5,24.5);}
+  if(c.x<.5||c.x>W-.5||c.y<.5||c.y>H-.5){c.dx=-c.dx;c.dy=-c.dy;c.x=clamp(c.x,.5,W-.5);c.y=clamp(c.y,.5,H-.5);}
  }
 }
 function carHidden(x,y){const ix=Math.floor(x),iy=Math.floor(y);
@@ -1067,9 +1396,9 @@ function render(){
   if(sw>0&&sh>0)ctx.drawImage(lightsCv,sx,sy,sw,sh,sx,sy,sw,sh);
   const gs=glowSpr();for(const c of cars){const lx=c.x+(c.dy?c.dy*.18:0),ly=c.y+(c.dx?-c.dx*.18:0);if(carHidden(lx,ly))continue;const pp=P(lx+c.dx*.42,ly+c.dy*.42);ctx.drawImage(gs,pp[0]-10,pp[1]-9,20,13);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
- if(S.showDist){for(let by=0;by<4;by++)for(let bx=0;bx<4;bx++){const d=distOf(bx,by);poly(ctx,tileQ(1+bx*6,1+by*6,5),DIST[d].col);}
+ if(S.showDist){for(let by=0;by<4;by++)for(let bx=0;bx<(S.ft?5:4);bx++){const d=distOf(bx,by);poly(ctx,tileQ(1+bx*6,1+by*6,5),DIST[d].col);}
   ctx.font='bold 14px system-ui,sans-serif';ctx.textAlign='center';
-  for(const [d,x,y] of [['centre',12.5,12.5],['port',12.5,3],['gare',21.5,15],['faubourg',5,16]]){const pp=P(x,y);const w=ctx.measureText(DIST[d].n).width+16;ctx.fillStyle='rgba(12,18,28,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(pp[0]-w/2,pp[1]-62,w,24,10):ctx.rect(pp[0]-w/2,pp[1]-62,w,24);ctx.fill();ctx.fillStyle='#f5c451';ctx.fillText(DIST[d].n,pp[0],pp[1]-45);}}
+  for(const [d,x,y] of [['centre',12.5,12.5],['port',12.5,3],['gare',21.5,15],['faubourg',5,16]].concat(S.ft?[['hauteurs',27.5,12.5]]:[])){const pp=P(x,y);const w=ctx.measureText(DIST[d].n).width+16;ctx.fillStyle='rgba(12,18,28,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(pp[0]-w/2,pp[1]-62,w,24,10):ctx.rect(pp[0]-w/2,pp[1]-62,w,24);ctx.fill();ctx.fillStyle='#f5c451';ctx.fillText(DIST[d].n,pp[0],pp[1]-45);}}
  const hl=(p,c,w)=>{ctx.strokeStyle=c;ctx.lineWidth=w;poly(ctx,tileQ(p.tx,p.ty,p.size),null,null);ctx.stroke();};
  if(S.choosing)for(const p of S.props){if(localOk(p,S.choosing.act))hl(p,'#3ddc97',2.5);}
  if(hoverP&&hoverP!==sel)hl(hoverP,'rgba(255,255,255,.6)',1.5);
@@ -1164,8 +1493,10 @@ function drawTop(){
  const p=S.P,L=S.lastL;
  $('#hCash').textContent=fmt(p.cash);$('#hCash').className=p.cash<0?'neg':'';
  $('#hCf').textContent=sg(L.cf);$('#hCf').className=L.cf<0?'neg':'pos';
- $('#hLib').textContent='🌴 Passifs '+fmt(L.pas)+' / Dépenses '+fmt(L.dep);
- $('#hLibB').style.width=clamp(L.pas/Math.max(1,L.dep)*100,0,100)+'%';
+ const ftd=S.ft&&S.ft.active&&S.ft.dream;
+ if(ftd){const pr=dreamProg();$('#hLib').textContent=S.ft.dream.ic+' '+S.ft.dream.n+' · '+Math.floor(pr*100)+' %';$('#hLibB').style.width=pr*100+'%';$('#lib').title='Ton rêve. Marge de liberté : '+sg(L.pas-L.dep)+'/mois';}
+ else{$('#hLib').textContent=(S.ft&&!S.ft.active?'⚠️ ':S.ft?'🌟 ':'🌴 ')+'Passifs '+fmt(L.pas)+' / Dépenses '+fmt(L.dep);$('#hLibB').style.width=clamp(L.pas/Math.max(1,L.dep)*100,0,100)+'%';}
+ $('#lib').classList.toggle('ft',!!ftd);
  $('#hDebt').textContent=fmtK(debts(true));$('#hNw').textContent=fmtK(netWorth());
  $('#hDate').textContent='📅 '+(S.day%30+1)+' '+dateStr();
  document.querySelectorAll('#vit button').forEach(b=>b.classList.toggle('on',+b.dataset.v===S.speed));
@@ -1246,9 +1577,9 @@ function closePanel(){$('#pan').className='ov cache';panKind=null;lastActKey='';
 $('#panX').onclick=closePanel;
 function drawPanel(){
  const b=$('#panB'),k=panKind,st=b.scrollTop;
- const T={annonces:'🏷️ Biens à vendre',boite:'🏢 Ma boîte',banque:'🏦 Banque',bourse:'📈 Bourse',finances:'📒 Mes finances',classement:'🏆 Investisseurs de la ville'};
+ const T={annonces:'🏷️ Biens à vendre',boite:'🏢 Ma boîte',banque:'🏦 Banque',bourse:'📈 Bourse',finances:'📒 Mes finances',classement:'🏆 Investisseurs de la ville',fasttrack:'🌟 Fast Track'};
  $('#panT').textContent=T[k];
- b.innerHTML=({annonces:pAnnonces,boite:pBoite,banque:pBanque,bourse:pBourse,finances:pFinances,classement:pClassement})[k]();
+ b.innerHTML=({annonces:pAnnonces,boite:pBoite,banque:pBanque,bourse:pBourse,finances:pFinances,classement:pClassement,fasttrack:pFast})[k]();
  b.querySelectorAll('table').forEach(t=>{const w=document.createElement('div');w.className='tw';t.replaceWith(w);w.append(t);});
  b.querySelectorAll('[data-act]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();panelAction(e.dataset.act,e.dataset);});
  if(k==='finances')drawFinChart();if(k==='bourse')drawSparks();if(k==='boite')drawCompChart();
@@ -1357,15 +1688,15 @@ function pBourse(){
 function pFinances(){
  const L=S.lastL,ln=(l,v,cl)=>v?'<div class="ln '+(cl||'')+'"><span>'+l+'</span><span>'+sg(v)+'</span></div>':'';
  let h='<div class="cols"><div><h4 style="margin-top:0">Compte de résultat (dernier mois)</h4><div class="ln s">Revenus actifs (ton travail)</div>'+ln('Salaire',L.salaire)+ln('Allocation chômage',L.chom)+(L.boitePassif?'':ln('Revenus de ta boîte',L.boite));
- h+='<div class="ln s">Revenus passifs (tes actifs)</div>'+ln('Loyers perçus',L.loyers)+ln('Charges et assurance',-L.charges)+ln('Taxe foncière',-L.tf)+ln('Agence de gestion',-L.agence)+ln('Mensualités des crédits immo',-L.payImmo)+ln('Impôt sur les loyers',-L.taxF)+ln('Dividendes nets',L.div)+ln('Intérêts du livret',L.livret)+(L.boitePassif?ln('Revenus de ta boîte (gérée sans toi)',L.boite):'');
+ h+='<div class="ln s">Revenus passifs (tes actifs)</div>'+ln('Loyers perçus',L.loyers)+ln('Charges et assurance',-L.charges)+ln('Taxe foncière',-L.tf)+ln('Agence de gestion',-L.agence)+ln('Mensualités des crédits immo',-L.payImmo)+ln('Impôt sur les loyers',-L.taxF)+ln('Dividendes nets',L.div)+ln('Intérêts du livret',L.livret)+ln('Grandes affaires (Fast Track)',L.ftCf)+(L.boitePassif?ln('Revenus de ta boîte (gérée sans toi)',L.boite):'');
  h+='<div class="ln t"><span>Total revenus passifs</span><span class="'+(L.pas>=0?'pos':'neg')+'">'+sg(L.pas)+'</span></div>';
- h+='<div class="ln s">Dépenses</div>'+ln('Vie courante',-L.vie)+ln('Loyer de ton logement',-L.logement)+ln('Crédit de ta résidence',-L.payHome)+ln('Charges de ta résidence',-L.homeCh)+ln('Crédits à la consommation',-L.payPerso);
+ h+='<div class="ln s">Dépenses</div>'+ln('Vie courante',-L.vie)+ln('Loyer de ton logement',-L.logement)+ln('Crédit de ta résidence',-L.payHome)+ln('Charges de ta résidence',-L.homeCh)+ln('Crédits à la consommation',-L.payPerso)+ln('Train de vie et rêves',-L.life);
  h+='<div class="ln t"><span>Total dépenses</span><span>'+sg(-L.dep)+'</span></div>'+ln('Impôt sur le revenu',-L.ir);
  h+='<div class="ln t" style="font-size:14px"><span>Cashflow mensuel</span><span class="'+(L.cf>=0?'pos':'neg')+'">'+sg(L.cf)+'</span></div></div>';
  let actifs=0;const bl=[];
  for(const p of S.props)if(p.owner===0){const v=value(p);actifs+=v;bl.push([TYPES[p.type].ic+' '+TYPES[p.type].n+(p.home?' (résidence)':''),v]);}
- h+='<div><h4 style="margin-top:0">Bilan</h4><div class="ln s">Ce que tu possèdes</div><div class="ln"><span>Trésorerie</span><span>'+fmt(S.P.cash)+'</span></div><div class="ln"><span>Livret</span><span>'+fmt(S.P.livret)+'</span></div><div class="ln"><span>Bourse</span><span>'+fmt(stockValue())+'</span></div>'+(S.comp?'<div class="ln"><span>Ta boîte</span><span>'+fmt(compValue())+'</span></div>':'')+bl.map(b=>'<div class="ln"><span>'+b[0]+'</span><span>'+fmt(b[1])+'</span></div>').join('');
- h+='<div class="ln s">Ce que tu dois</div>'+S.loans.filter(l=>l.kind!=='pro').map(l=>'<div class="ln"><span>'+l.label+'</span><span>'+fmt(-l.rest)+'</span></div>').join('');
+ h+='<div><h4 style="margin-top:0">Bilan</h4><div class="ln s">Ce que tu possèdes</div><div class="ln"><span>Trésorerie</span><span>'+fmt(S.P.cash)+'</span></div><div class="ln"><span>Livret</span><span>'+fmt(S.P.livret)+'</span></div><div class="ln"><span>Bourse</span><span>'+fmt(stockValue())+'</span></div>'+(S.comp?'<div class="ln"><span>Ta boîte</span><span>'+fmt(compValue())+'</span></div>':'')+(S.ft?S.ft.hold.map(x=>'<div class="ln"><span>'+x.ic+' '+x.name+'</span><span>'+fmt(x.val)+'</span></div>').join(''):'')+bl.map(b=>'<div class="ln"><span>'+b[0]+'</span><span>'+fmt(b[1])+'</span></div>').join('');
+ h+='<div class="ln s">Ce que tu dois</div>'+S.loans.filter(l=>l.kind!=='pro').map(l=>'<div class="ln"><span>'+l.label+'</span><span>'+fmt(-l.rest)+'</span></div>').join('')+(S.ft?S.ft.hold.filter(x=>x.debt>1).map(x=>'<div class="ln"><span>Crédit '+x.name+'</span><span>'+fmt(-x.debt)+'</span></div>').join(''):'');
  h+='<div class="ln t" style="font-size:14px"><span>Patrimoine net</span><span>'+fmt(netWorth())+'</span></div>';
  const q={E:L.salaire>0,S:L.boite>0&&!L.boitePassif,B:L.boitePassif,I:L.loyers+L.div>0};
  h+='<h4>Ton quadrant</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:center">'+[['E','Employé'],['B','Propriétaire d\'entreprise'],['S','Indépendant'],['I','Investisseur']].map(x=>'<div style="padding:4px;border-radius:4px;background:'+(q[x[0]]?'#2f7a45':'#2c3e50')+'"><b>'+x[0]+'</b> '+x[1]+'</div>').join('')+'</div>';
@@ -1384,6 +1715,7 @@ function pClassement(){
  return h;
 }
 function panelAction(a,d){
+ {const r=ftAction(a,d);if(r==='stop'){S.lastL=ledger();drawTop();return;}if(r){S.lastL=ledger();drawPanel();drawTop();return;}}
  const c=S.comp;
  switch(a){
   case 'sort':annSort=d.s;break;
@@ -1496,11 +1828,12 @@ function showStart(){
  draw();
 }
 function resume(s){
- S=s;rebuildGrid();
+ S=s;S.di.hauteurs=S.di.hauteurs||1;S.dtr.hauteurs=S.dtr.hauteurs||0;rebuildGrid();
  for(const l of S.loans){}
  S.lastL=ledger();sceneDirty=true;initCars();sel=null;running=true;S.speed=0;
  const c=P(12.5,12.5);Z=fitZ();centerOn(c[0],c[1]-20);
  drawTop();toast('Partie reprise. Appuie sur ▶ pour relancer le temps.','c');
+ if(S.won&&!S.ft&&!S.evq.some(e=>e.id==='victoire'))queueEvent('victoire');
 }
 
 /* ---------- boucle ---------- */
@@ -1545,7 +1878,7 @@ resize();
 requestAnimationFrame(frame);
 showStart();
 /* interface de test */
-window.__t={setPh:v=>{dayPh=v;},setJN:v=>{JN=v;},furnish:id=>furnish(propById(id)),newGame:k=>{newGame(k);},S:()=>S,auto:v=>{auto=v;},
+window.__t={startFT:()=>startFT(),achieve:()=>achieveDream(),buyDeal:i=>buyDeal(S.ft.deals[i]),setDream:i=>setDream(DREAMS[i]),pFast:()=>pFast(),setTab:t=>{ftTab=t;},setPh:v=>{dayPh=v;},setJN:v=>{JN=v;},furnish:id=>furnish(propById(id)),newGame:k=>{newGame(k);},S:()=>S,auto:v=>{auto=v;},
  days:n=>{for(let i=0;i<n;i++){dayTick();runEvents();if(S.over)break;}},
  buy:(id,fin)=>buyProp(propById(id),propById(id).ask,fin||{cash:false,apport:.1,dur:20}),
  createCompany:(a,s,id)=>createCompany(a,s,id?propById(id):null),ledger,netWorth,value,rentBase,estCredit,bankCheck,render,buildScene,drawPanel,openPanel,closePanel,
