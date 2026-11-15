@@ -1182,22 +1182,27 @@ function vFeuille(){
   ${miniCoverage()}`;
   return h;
 }
-function miniCoverage(){if(!C.firstMonth())return '';const D=covData(12);if(!D)return '';
-  return chartPanel('cov','Revenus passifs et dépenses',(W,H,full)=>covChart(covData(full?S.covN:12),W,H),{H:200,tools:covTools,foot:covFoot})}
-/* Revenus passifs nets face aux dépenses de référence : vue mensuelle (N derniers mois complets) ou annuelle (par année civile). */
-function covData(n){const first=C.firstMonth();if(!first)return null;const cur=mk(todayISO());
+/* Graphiques de couverture de la Feuille : une série de revenus face à une série de dépenses, vue mensuelle ou annuelle (réglage commun). */
+const COVK={
+  cov:{t:'Revenus passifs et dépenses',a:['Revenus passifs nets',x=>x.pas,'var(--inc)'],b:['Dépenses de référence',x=>x.exp,'var(--exp)']},
+  glob:{t:'Recettes globales et dépenses',a:['Toutes les recettes encaissées',x=>x.inc,'var(--pos)'],b:['Toutes les dépenses payées',x=>x.out,'var(--exp)']},
+  semi:{t:'Revenus passifs + loisirs et dépenses',a:['Passifs + semi-passifs (loisirs)',x=>x.pure+x.semi,'var(--inc)'],b:['Dépenses de référence',x=>x.exp,'var(--exp)']}};
+function miniCoverage(keys=['cov','glob','semi']){if(!C.firstMonth())return '';
+  return keys.map(k=>covData(12,k)?chartPanel(k,COVK[k].t,(W,H,full)=>covChart(covData(full?S.covN:12,k),W,H,k),{H:200,tools:covTools,foot:covFoot}):'').join('')}
+function covData(n,k='cov'){const K=COVK[k];const first=C.firstMonth();if(!first)return null;const cur=mk(todayISO());
   if((S.covMode||'m')==='y'){const y0=Number(first.slice(0,4)),y1=Number(cur.slice(0,4));const ys=[];
-    for(let y=y0;y<=y1;y++){let pas=0,exp=0,k=0;for(let i=1;i<=12;i++){const m=y+'-'+String(i).padStart(2,'0');if(m<first||m>cur)continue;const a=C.monthAgg(m);pas+=a.pas;exp+=a.exp;k++}if(k)ys.push({l:String(y)+(y===y1?' *':''),pas,exp,k})}
-    while(ys.length>1&&!ys[0].pas&&!ys[0].exp)ys.shift();
-    return ys.some(d=>d.pas||d.exp)?{mode:'y',rows:ys}:null}
+    for(let y=y0;y<=y1;y++){let a=0,b=0,c=0;for(let i=1;i<=12;i++){const m=y+'-'+String(i).padStart(2,'0');if(m<first||m>cur)continue;const g=C.monthAgg(m);a+=K.a[1](g);b+=K.b[1](g);c++}if(c)ys.push({l:String(y)+(y===y1?' *':''),a,b})}
+    while(ys.length>1&&!ys[0].a&&!ys[0].b)ys.shift();
+    return ys.some(d=>d.a||d.b)?{mode:'y',rows:ys}:null}
   const ms=[];const N=n==='all'?Math.max(1,(Number(cur.slice(0,4))-Number(first.slice(0,4)))*12+Number(cur.slice(5))-Number(first.slice(5,7))):Number(n)||12;
   for(let i=N;i>=1;i--)ms.push(addMonths(cur,-i));
-  const rows=ms.map(m=>{const a=C.monthAgg(m);const has=m>=first;return {l:mLabel(m).split(' ')[0]+(N>12?' '+m.slice(2,4):''),pas:has?a.pas:null,exp:has?a.exp:null}});
-  if(n==='all')while(rows.length>12&&!rows[0].pas&&!rows[0].exp)rows.shift();
-  return rows.some(d=>d.pas||d.exp)?{mode:'m',rows}:null}
-function covChart(D,W,H){if(!D)return '<p class="empty">Pas encore d’opérations sur cette période.</p>';
-  if(D.mode==='y')return barChart(D.rows.map(d=>d.l),[{name:'Revenus passifs nets',vals:D.rows.map(d=>d.pas),color:'var(--inc)'},{name:'Dépenses de référence',vals:D.rows.map(d=>d.exp),color:'var(--exp)'}],H,W);
-  return lineChart(D.rows.map(d=>d.l),[{name:'Dépenses de référence',vals:D.rows.map(d=>d.exp),color:'var(--exp)'},{name:'Revenus passifs nets',vals:D.rows.map(d=>d.pas),color:'var(--inc)'}],H,axisFmt,W)}
+  const rows=ms.map(m=>{const g=C.monthAgg(m);const has=m>=first;return {l:mLabel(m).split(' ')[0]+(N>12?' '+m.slice(2,4):''),a:has?K.a[1](g):null,b:has?K.b[1](g):null}});
+  if(n==='all')while(rows.length>12&&!rows[0].a&&!rows[0].b)rows.shift();
+  return rows.some(d=>d.a||d.b)?{mode:'m',rows}:null}
+function covChart(D,W,H,k='cov'){const K=COVK[k];if(!D)return '<p class="empty">Pas encore d’opérations sur cette période.</p>';
+  const A={name:K.a[0],vals:D.rows.map(d=>d.a),color:K.a[2]},B={name:K.b[0],vals:D.rows.map(d=>d.b),color:K.b[2]};
+  if(D.mode==='y')return barChart(D.rows.map(d=>d.l),[A,B],H,W);
+  return lineChart(D.rows.map(d=>d.l),[B,A],H,axisFmt,W)}
 function covTools(full){const md=S.covMode||'m';const seg=(act,cur,opts)=>`<div class="tseg" role="group">${opts.map(([v,l])=>`<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${String(cur)===String(v)}" class="${String(cur)===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
   return seg('cov-mode',md,[['m','Mensuel'],['y','Annuel']])+(full&&md==='m'?seg('cov-n',S.covN||12,[[12,'12 mois'],[24,'24 mois'],[36,'36 mois'],['all','Tout']]):'')}
 function covFoot(){return (S.covMode||'m')==='y'?`<p class="small muted" style="margin:6px 0 0">Totaux par année civile. * année en cours, jusqu’à ce jour.</p>`:''}
@@ -1561,7 +1566,7 @@ function analyses(){
   const cur=mk(todayISO());const ms=[];for(let i=11;i>=0;i--)ms.push(addMonths(cur,-i));
   const ag=ms.map(m=>C.monthAgg(m));const labs=ms.map(m=>mLabel(m).split(' ')[0]);
   let h=chartPanel('an-rd','Recettes et dépenses, 12 derniers mois',(W,H)=>barChart(labs,[{name:'Recettes',vals:ag.map(a=>a.inc),color:'var(--pos)'},{name:'Dépenses',vals:ag.map(a=>a.out),color:'var(--neg)'}],H,W),{H:220});
-  h+=miniCoverage();
+  h+=miniCoverage(['cov','semi']);
   h+=chartPanel('an-cf','Cashflow mensuel et revenus passifs',(W,H)=>lineChart(labs,[{name:'Cashflow mensuel',vals:ag.map(a=>a.cash),color:'var(--ink)'},{name:'Revenus passifs nets',vals:ag.map(a=>a.pas),color:'var(--pos)'}],H,axisFmt,W));
   h+=chartPanel('an-cov','Progression vers la sortie de la Rat Race',(W,H)=>lineChart(labs,[{name:'Couverture des dépenses par les revenus passifs',vals:ag.map(a=>a.exp?Math.round(a.pas/a.exp*100):null),color:'var(--pos)'}],H,v=>Math.round(v)+' %',W));
   /* Répartition des dépenses (12 mois) et moyennes */
@@ -3297,7 +3302,7 @@ document.addEventListener('click',async e=>{
     case 'ca-full':caFull();break;
     case 'chart-full':chartFull(t.dataset.c);break;
     case 'cov-mode':S.covMode=t.dataset.v;try{localStorage.setItem('cov-mode',S.covMode)}catch(e){}render();if(S.chartFull)chartFull(S.chartFull);break;
-    case 'cov-n':S.covN=t.dataset.v==='all'?'all':Number(t.dataset.v);chartFull('cov');break;
+    case 'cov-n':S.covN=t.dataset.v==='all'?'all':Number(t.dataset.v);chartFull(S.chartFull||'cov');break;
     case 'ca-months':planCfg().chartMonths=Number(t.dataset.v);saveCfg();break;
     case 'ca-pick':{const p=planCfg();const cur=p.chartSel&&p.chartSel.length?p.chartSel:p.activities.map(a=>a.id);
       openModal('Produits à afficher',`<p class="small muted" style="margin:0">Coche les activités à suivre sur le graphique.</p><div class="stack" style="gap:8px">${p.activities.map(a=>`<label class="check" style="font-size:15px"><input type="checkbox" class="ca-chk" value="${a.id}" ${cur.includes(a.id)?'checked':''}> ${esc(a.name)}${a.keyword?'':' <span class="badge warn">mot-clé à compléter</span>'}</label>`).join('')}</div>`,
