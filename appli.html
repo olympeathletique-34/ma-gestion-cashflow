@@ -1610,8 +1610,9 @@ function analyses(){
 const ACC_GRP0=(()=>{try{return localStorage.getItem('acc-group')==='1'}catch(e){return false}})();
 function accType(a){return a.type||'Autre'}
 function accBalCls(v){return v==null?'':v<0?'neg':'pos'}
-function accCard(a,grp){const b=C.balance(a);const gap=b!=null&&a.real!=null?a.real-b:null;
-  return `<div class="card"><div class="ch"><h3>${esc(a.name)}</h3>${grp?'':`<span class="small acc-ty">${esc(accType(a))}</span>`}<span class="acc-bal num money ${accBalCls(b)}">${b==null?'—':money(b)}</span></div><div class="cb">
+function accPer(a){const r=periodRange();const d=accData(a.id,r.from,r.to);return d.ti-d.to}
+function accCard(a,grp){const b=C.balance(a);const ps=accPer(a);const gap=b!=null&&a.real!=null?a.real-b:null;
+  return `<div class="card"><div class="ch"><h3>${esc(a.name)}</h3>${grp?'':`<span class="small acc-ty">${esc(accType(a))}</span>`}<span class="acc-bal num money ${accBalCls(ps)}" title="Recettes − dépenses de ce compte sur la période">${moneyS(ps)}</span></div><div class="cb">
       <div class="kv strong"><span class="k">Solde théorique</span><span class="v num money">${b==null?'—':money(b)}</span></div>
       ${b==null?'<p class="small warn" style="margin:6px 0">Renseigne un solde initial et sa date pour calculer le solde.</p>':''}
       <div class="kv"><span class="k">Solde initial<small>${a.initialDate?'au '+fdate(a.initialDate):'date à renseigner'}</small></span><span class="v num money">${money(a.initial)}</span></div>
@@ -1622,20 +1623,23 @@ function vComptes(){
   if(S.accGroup==null)S.accGroup=ACC_GRP0;
   const all=S.cfg.accounts;const types=[];all.forEach(a=>{const t=accType(a);if(!types.includes(t))types.push(t)});
   if(S.accType&&!types.includes(S.accType))S.accType=null;
-  const sumOf=l=>l.reduce((t,a)=>t+(C.balance(a)||0),0);
-  const missing=l=>l.filter(a=>C.balance(a)==null).length;
+  const R=periodRange();
+  const sumOf=l=>l.reduce((t,a)=>t+accPer(a),0);
   const list=S.accType?all.filter(a=>accType(a)===S.accType):all;
-  const tot=sumOf(list),mis=missing(list);
-  let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Mes comptes</h2><span class="sp"></span><button class="btn" data-act="new-tr">⇄ Transfert entre mes comptes</button><button class="btn" data-act="new-account">+ Ajouter un compte</button></div>
-  <section class="acctot ${accBalCls(tot)}"><span class="eyebrow">${S.accType?'Solde total · '+esc(S.accType):'Solde total de mes comptes'}</span><b class="num money">${money(tot)}</b><span class="small">${list.length} compte${list.length>1?'s':''}${mis?` · ${mis} sans solde initial, compté${mis>1?'s':''} à 0`:''}</span></section>`;
+  const tot=sumOf(list);
+  let h=periodBar()+`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Mes comptes</h2><span class="sp"></span><button class="btn" data-act="new-tr">⇄ Transfert entre mes comptes</button><button class="btn" data-act="new-account">+ Ajouter un compte</button></div>
+  <section class="acctot ${accBalCls(tot)}"><span class="eyebrow">Solde ${S.accType?esc(S.accType)+' · ':'de mes comptes · '}${esc(R.label)}</span><b class="num money">${moneyS(tot)}</b><span class="small">recettes − dépenses sur la période · ${list.length} compte${list.length>1?'s':''}</span></section>`;
   if(types.length>1||all.length>3){
-    h+=`<div class="acctypes"><div class="chips" role="group" aria-label="Filtrer par type de compte"><button class="chip ${S.accType?'':'on'}" data-act="acc-type" data-v="">Tous <b class="money">${money(sumOf(all))}</b></button>${types.map(t=>{const l=all.filter(a=>accType(a)===t);return `<button class="chip ${S.accType===t?'on':''}" data-act="acc-type" data-v="${esc(t)}">${esc(t)} <small>${l.length}</small> <b class="money">${money(sumOf(l))}</b></button>`}).join('')}</div>
+    h+=`<div class="acctypes"><div class="chips" role="group" aria-label="Filtrer par type de compte"><button class="chip ${S.accType?'':'on'}" data-act="acc-type" data-v="">Tous <b class="money">${moneyS(sumOf(all))}</b></button>${types.map(t=>{const l=all.filter(a=>accType(a)===t);return `<button class="chip ${S.accType===t?'on':''}" data-act="acc-type" data-v="${esc(t)}">${esc(t)} <small>${l.length}</small> <b class="money">${moneyS(sumOf(l))}</b></button>`}).join('')}</div>
     <label class="check accgrp"><input type="checkbox" data-act="acc-group" ${S.accGroup?'checked':''}> Regrouper par type</label></div>`}
-  h+=`<p class="small muted">Le solde théorique part du solde initial et ajoute les opérations payées ou encaissées depuis sa date. Ce n’est pas un solde bancaire officiel : compare-le de temps en temps avec ton appli bancaire. Aucun identifiant bancaire n’est demandé ni stocké.</p>`;
+  {const ids=all.map(x=>x.id);const no=C.range(R.from,R.to).filter(o=>C.isReal(o)&&o.kind!=='tr'&&!ids.includes(o.accountId));
+    if(no.length&&!S.accType){const v=no.reduce((t,o)=>t+(o.kind==='inc'?o.amount:-o.amount),0);
+      h+=`<div class="notice"><b>${no.length} opération${no.length>1?'s':''} sans compte sur la période (${moneyS(v)}).</b> Elle${no.length>1?'s ne sont':' n’est'} pas comptée${no.length>1?'s':''} ci-dessus. Touche une opération pour lui attribuer un compte :<div class="oplist" style="margin-top:6px">${no.map(opLine).join('')}</div></div>`}}
+  h+=`<p class="small muted">Le montant à droite de chaque compte est son solde sur la période choisie (recettes − dépenses, virements compris). Le solde théorique part du solde initial et ajoute les opérations payées ou encaissées depuis sa date. Ce n’est pas un solde bancaire officiel : compare-le de temps en temps avec ton appli bancaire. Aucun identifiant bancaire n’est demandé ni stocké.</p>`;
   if(S.accGroup&&types.length>1){
     const shown=S.accType?[S.accType]:types;
     for(const t of shown){const l=list.filter(a=>accType(a)===t);if(!l.length)continue;const v=sumOf(l);
-      h+=`<h3 class="grp-title acc-grp" data-fname="${esc(t)}"><span>${esc(t)} <small>${l.length}</small></span><span class="acc-gsum num money ${accBalCls(v)}">${money(v)}</span></h3><div class="cards">${l.map(a=>accCard(a,true)).join('')}</div>`}
+      h+=`<h3 class="grp-title acc-grp" data-fname="${esc(t)}"><span>${esc(t)} <small>${l.length}</small></span><span class="acc-gsum num money ${accBalCls(v)}">${moneyS(v)}</span></h3><div class="cards">${l.map(a=>accCard(a,true)).join('')}</div>`}
   }else h+=`<div class="cards">${list.map(a=>accCard(a,false)).join('')}</div>`;
   return h;
 }
