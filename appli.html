@@ -307,6 +307,8 @@ table.year tr.tot td{font-weight:700}
 h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom:14px}.panel.is-folded:not(.q-open)>.fold-h{margin-bottom:0}
 .q-hide,.f-hide{display:none!important}
 .card>.ch.fold-h{align-items:center;padding-right:50px}.cards:has(.card.is-folded){align-items:start}.card.is-folded:not(.q-open)>.ch{padding-bottom:14px}
+.nacc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}.nacc-bar select{min-width:0;flex:1 1 180px;max-width:280px}
+.nacc-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px}.nacc-row .nacc-ck{width:20px;height:20px;margin:0 0 0 4px}
 .acctot{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:14px 18px;margin:8px 0 12px;border-radius:18px;border:1.5px solid var(--line);background:var(--card)}
 .acctot .eyebrow{flex:1 1 100%}.acctot b{font-size:clamp(26px,6vw,34px);line-height:1.1}
 .acctot.pos{background:color-mix(in srgb,var(--pos) 11%,var(--card));border-color:color-mix(in srgb,var(--pos) 40%,var(--line))}.acctot.pos b{color:var(--pos)}
@@ -1634,7 +1636,9 @@ function vComptes(){
     <label class="check accgrp"><input type="checkbox" data-act="acc-group" ${S.accGroup?'checked':''}> Regrouper par type</label></div>`}
   {const ids=all.map(x=>x.id);const no=C.range(R.from,R.to).filter(o=>C.isReal(o)&&o.kind!=='tr'&&!ids.includes(o.accountId));
     if(no.length&&!S.accType){const v=no.reduce((t,o)=>t+(o.kind==='inc'?o.amount:-o.amount),0);
-      h+=`<div class="notice"><b>${no.length} opération${no.length>1?'s':''} sans compte sur la période (${moneyS(v)}).</b> Elle${no.length>1?'s ne sont':' n’est'} pas comptée${no.length>1?'s':''} ci-dessus. Touche une opération pour lui attribuer un compte :<div class="oplist" style="margin-top:6px">${no.map(opLine).join('')}</div></div>`}}
+      h+=`<div class="notice"><b>${no.length} opération${no.length>1?'s':''} sans compte sur la période (${moneyS(v)}).</b> Elle${no.length>1?'s ne sont':' n’est'} pas comptée${no.length>1?'s':''} ci-dessus. Coche celles à rattacher, choisis le compte puis « Attribuer ». Touche une ligne pour l’ouvrir.
+        <div class="nacc-bar"><label class="check"><input type="checkbox" data-act="nacc-all" checked> Tout</label><select id="nacc-to" aria-label="Compte à attribuer"><option value="">Choisir un compte…</option>${all.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select><button class="btn sm solid" data-act="nacc-go">Attribuer aux opérations cochées</button><label class="check small" title="Le loyer, la récurrence ou le contrat d’origine gardera ce compte : les prochaines opérations générées l’auront déjà"><input type="checkbox" id="nacc-keep" checked> Retenir pour les prochains mois</label></div>
+        <div class="oplist nacc-list">${no.map(o=>`<div class="nacc-row"><input type="checkbox" class="nacc-ck" value="${o.id}" checked aria-label="Sélectionner ${esc(C.opName(o))}">${opLine(o)}</div>`).join('')}</div></div>`}}
   h+=`<p class="small muted">Le montant à droite de chaque compte est son solde sur la période choisie (recettes − dépenses, virements compris). Le solde théorique part du solde initial et ajoute les opérations payées ou encaissées depuis sa date. Ce n’est pas un solde bancaire officiel : compare-le de temps en temps avec ton appli bancaire. Aucun identifiant bancaire n’est demandé ni stocké.</p>`;
   if(S.accGroup&&types.length>1){
     const shown=S.accType?[S.accType]:types;
@@ -3333,6 +3337,16 @@ document.addEventListener('click',async e=>{
     case 'urs-debt-new':debtForm(null,{name:'Dette URSSAF',cat:'Autres engagements financiers',urssaf:true});break;
     case 'urs-debt-pay':ursDebtPay(id);break;
     case 'acc-chart':accChart(id);break;
+    case 'nacc-all':document.querySelectorAll('.nacc-ck').forEach(c=>c.checked=t.checked);break;
+    case 'nacc-go':{const to=($('#nacc-to')||{}).value;const ids=[...document.querySelectorAll('.nacc-ck:checked')].map(c=>c.value);
+      if(!ids.length){toast('Coche au moins une opération');break}if(!to){toast('Choisis un compte');const sl=$('#nacc-to');if(sl)sl.focus();break}
+      const ups=allOps().filter(o=>ids.includes(o.id)).map(o=>({...o,accountId:to}));
+      if(($('#nacc-keep')||{}).checked){let ch=false;for(const o of ups){
+        if(o.recurrenceId){const r=S.cfg.recurrences.find(x=>x.id===o.recurrenceId);if(r&&!r.accountId){r.accountId=to;ch=true}}
+        else if(String(o.id).startsWith('op-rent-')&&o.propertyId){const pr=C.prop(o.propertyId);if(pr&&!pr.rentAccountId){pr.rentAccountId=to;ch=true}}
+        else if(o.contractId&&String(o.id).startsWith('op-'+o.contractId+'-')){const c=S.cfg.contracts.find(x=>x.id===o.contractId);if(c&&!c.accountId){c.accountId=to;ch=true}}}
+        if(ch)saveCfg()}
+      bulkOps(ups,[]).then(()=>toast(ups.length+' opération'+(ups.length>1?'s':'')+' rattachée'+(ups.length>1?'s':'')+' à '+C.acc(to).name));break}
     case 'acc-type':S.accType=t.dataset.v||null;render();break;
     case 'acc-group':S.accGroup=!!t.checked;try{localStorage.setItem('acc-group',S.accGroup?'1':'0')}catch(e){}render();break;
     case 'acc-tab':S.accTab=t.dataset.v;S.modalRefresh&&S.modalRefresh();break;
