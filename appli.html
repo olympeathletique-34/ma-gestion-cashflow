@@ -307,6 +307,16 @@ table.year tr.tot td{font-weight:700}
 h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom:14px}.panel.is-folded:not(.q-open)>.fold-h{margin-bottom:0}
 .q-hide,.f-hide{display:none!important}
 .card>.ch.fold-h{align-items:center;padding-right:50px}.cards:has(.card.is-folded){align-items:start}.card.is-folded:not(.q-open)>.ch{padding-bottom:14px}
+.acctot{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:14px 18px;margin:8px 0 12px;border-radius:18px;border:1.5px solid var(--line);background:var(--card)}
+.acctot .eyebrow{flex:1 1 100%}.acctot b{font-size:clamp(26px,6vw,34px);line-height:1.1}
+.acctot.pos{background:color-mix(in srgb,var(--pos) 11%,var(--card));border-color:color-mix(in srgb,var(--pos) 40%,var(--line))}.acctot.pos b{color:var(--pos)}
+.acctot.neg{background:color-mix(in srgb,var(--neg) 10%,var(--card));border-color:color-mix(in srgb,var(--neg) 40%,var(--line))}.acctot.neg b{color:color-mix(in srgb,var(--neg) 80%,var(--ink))}
+.acctypes{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 10px}.acctypes .chip b{font-weight:700;margin-left:4px}.acctypes .chip small{opacity:.7}
+.accgrp{margin-left:auto;font-size:13px}
+.acc-bal{margin-left:auto;font-weight:700;font-size:16px;white-space:nowrap}.acc-bal.pos{color:var(--pos)}.acc-bal.neg{color:color-mix(in srgb,var(--neg) 80%,var(--ink))}
+.card .ch .acc-ty{order:0}
+h3.acc-grp{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 8px;padding-right:36px}.acc-grp small{color:var(--muted);font-weight:500}
+.acc-gsum{font-weight:700}.acc-gsum.pos{color:var(--pos)}.acc-gsum.neg{color:color-mix(in srgb,var(--neg) 80%,var(--ink))}
 .fold-sum{display:none;margin-left:auto;font-weight:700;font-size:15px;padding:3px 10px;border-radius:999px;white-space:nowrap}
 .is-folded:not(.q-open)>.fold-h>.fold-sum:not(:empty){display:inline-block}
 .fold-sum.pos{color:var(--pos);background:color-mix(in srgb,var(--pos) 14%,transparent)}
@@ -1227,7 +1237,7 @@ const FOLD={q:{},
   items(scope){return [...scope.querySelectorAll('.row,.pfrow,.kvbtn,.qrow,tbody tr,ul>li,.cards>*')]},
   apply(v){if(S.route==='memos'||S.route==='bilan'||S.route==='fasttrack')return;
     const B=FOLD.blocks(v);const st=FOLD.st();
-    B.forEach(b=>{const name=b.title.textContent.trim();b.name=name;b.head.classList.add('fold-h');
+    B.forEach(b=>{const name=(b.title.dataset.fname||b.title.textContent).trim();b.name=name;b.head.classList.add('fold-h');
       const btn=document.createElement('button');btn.type='button';btn.className='fold-b';btn.setAttribute('aria-label',(st[name]?'Déplier « ':'Replier « ')+name+' »');btn.setAttribute('aria-expanded',String(!st[name]));btn.innerHTML='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       b.head.appendChild(btn);b.btn=btn;b.title.classList.add('fold-t');
       const tog=()=>{const o=FOLD.st();const c=!b.el.classList.contains('is-folded');if(c)o[name]=1;else delete o[name];FOLD.put(o);FOLD.set(b,c)};
@@ -1594,18 +1604,38 @@ function analyses(){
 }
 
 /* ==================== Vue : Comptes ==================== */
-function vComptes(){
-  let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Mes comptes</h2><span class="sp"></span><button class="btn" data-act="new-tr">⇄ Transfert entre mes comptes</button><button class="btn" data-act="new-account">+ Ajouter un compte</button></div>
-  <p class="small muted">Le solde théorique part du solde initial et ajoute les opérations payées ou encaissées depuis sa date. Ce n’est pas un solde bancaire officiel : compare-le de temps en temps avec ton appli bancaire. Aucun identifiant bancaire n’est demandé ni stocké.</p><div class="cards">`;
-  for(const a of S.cfg.accounts){const b=C.balance(a);const gap=b!=null&&a.real!=null?a.real-b:null;
-    h+=`<div class="card"><div class="ch"><h3>${esc(a.name)}</h3><span class="small">${esc(a.type||'')}</span></div><div class="cb">
+/* Comptes : solde dans l'en-tête de chaque compte, total coloré, filtre par type, regroupement par type. */
+const ACC_GRP0=(()=>{try{return localStorage.getItem('acc-group')==='1'}catch(e){return false}})();
+function accType(a){return a.type||'Autre'}
+function accBalCls(v){return v==null?'':v<0?'neg':'pos'}
+function accCard(a,grp){const b=C.balance(a);const gap=b!=null&&a.real!=null?a.real-b:null;
+  return `<div class="card"><div class="ch"><h3>${esc(a.name)}</h3>${grp?'':`<span class="small acc-ty">${esc(accType(a))}</span>`}<span class="acc-bal num money ${accBalCls(b)}">${b==null?'—':money(b)}</span></div><div class="cb">
       <div class="kv strong"><span class="k">Solde théorique</span><span class="v num money">${b==null?'—':money(b)}</span></div>
       ${b==null?'<p class="small warn" style="margin:6px 0">Renseigne un solde initial et sa date pour calculer le solde.</p>':''}
       <div class="kv"><span class="k">Solde initial<small>${a.initialDate?'au '+fdate(a.initialDate):'date à renseigner'}</small></span><span class="v num money">${money(a.initial)}</span></div>
       <div class="kv"><span class="k">Solde réel relevé<small>${a.realDate?'le '+fdate(a.realDate):'jamais relevé'}</small></span><span class="v num money">${money(a.real)}</span></div>
       ${gap!=null?`<div class="kv"><span class="k">Écart réel − théorique</span><span class="v num money ${gap?'warn':'pos'}">${moneyS(gap)}</span></div>`:''}
       <div class="btns"><button class="btn sm" data-act="edit-account" data-id="${a.id}">Modifier</button><button class="btn sm" data-act="real-balance" data-id="${a.id}">Relever le solde réel</button><button class="btn sm ghost" data-act="acc-ops" data-id="${a.id}">Opérations</button></div>${accMini(a)}</div></div>`}
-  return h+'</div>';
+function vComptes(){
+  if(S.accGroup==null)S.accGroup=ACC_GRP0;
+  const all=S.cfg.accounts;const types=[];all.forEach(a=>{const t=accType(a);if(!types.includes(t))types.push(t)});
+  if(S.accType&&!types.includes(S.accType))S.accType=null;
+  const sumOf=l=>l.reduce((t,a)=>t+(C.balance(a)||0),0);
+  const missing=l=>l.filter(a=>C.balance(a)==null).length;
+  const list=S.accType?all.filter(a=>accType(a)===S.accType):all;
+  const tot=sumOf(list),mis=missing(list);
+  let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Mes comptes</h2><span class="sp"></span><button class="btn" data-act="new-tr">⇄ Transfert entre mes comptes</button><button class="btn" data-act="new-account">+ Ajouter un compte</button></div>
+  <section class="acctot ${accBalCls(tot)}"><span class="eyebrow">${S.accType?'Solde total · '+esc(S.accType):'Solde total de mes comptes'}</span><b class="num money">${money(tot)}</b><span class="small">${list.length} compte${list.length>1?'s':''}${mis?` · ${mis} sans solde initial, compté${mis>1?'s':''} à 0`:''}</span></section>`;
+  if(types.length>1||all.length>3){
+    h+=`<div class="acctypes"><div class="chips" role="group" aria-label="Filtrer par type de compte"><button class="chip ${S.accType?'':'on'}" data-act="acc-type" data-v="">Tous <b class="money">${money(sumOf(all))}</b></button>${types.map(t=>{const l=all.filter(a=>accType(a)===t);return `<button class="chip ${S.accType===t?'on':''}" data-act="acc-type" data-v="${esc(t)}">${esc(t)} <small>${l.length}</small> <b class="money">${money(sumOf(l))}</b></button>`}).join('')}</div>
+    <label class="check accgrp"><input type="checkbox" data-act="acc-group" ${S.accGroup?'checked':''}> Regrouper par type</label></div>`}
+  h+=`<p class="small muted">Le solde théorique part du solde initial et ajoute les opérations payées ou encaissées depuis sa date. Ce n’est pas un solde bancaire officiel : compare-le de temps en temps avec ton appli bancaire. Aucun identifiant bancaire n’est demandé ni stocké.</p>`;
+  if(S.accGroup&&types.length>1){
+    const shown=S.accType?[S.accType]:types;
+    for(const t of shown){const l=list.filter(a=>accType(a)===t);if(!l.length)continue;const v=sumOf(l);
+      h+=`<h3 class="grp-title acc-grp" data-fname="${esc(t)}"><span>${esc(t)} <small>${l.length}</small></span><span class="acc-gsum num money ${accBalCls(v)}">${money(v)}</span></h3><div class="cards">${l.map(a=>accCard(a,true)).join('')}</div>`}
+  }else h+=`<div class="cards">${list.map(a=>accCard(a,false)).join('')}</div>`;
+  return h;
 }
 
 /* ==================== Répartition par compte ==================== */
@@ -3297,6 +3327,8 @@ document.addEventListener('click',async e=>{
     case 'urs-debt-new':debtForm(null,{name:'Dette URSSAF',cat:'Autres engagements financiers',urssaf:true});break;
     case 'urs-debt-pay':ursDebtPay(id);break;
     case 'acc-chart':accChart(id);break;
+    case 'acc-type':S.accType=t.dataset.v||null;render();break;
+    case 'acc-group':S.accGroup=!!t.checked;try{localStorage.setItem('acc-group',S.accGroup?'1':'0')}catch(e){}render();break;
     case 'acc-tab':S.accTab=t.dataset.v;S.modalRefresh&&S.modalRefresh();break;
     case 'acc-sel':{const k=t.dataset.k;S.accSel=S.accSel===k?null:k;S.modalRefresh&&S.modalRefresh();const dd=$('.accdet');if(dd&&S.accSel)dd.scrollIntoView({block:'nearest',behavior:'smooth'});break}
     case 'ca-full':caFull();break;
