@@ -840,8 +840,25 @@ function migrate(c){
       const m=cts.filter(x=>!x.lineRef&&(kind==='prop'?x.propertyId===ow.id:x.companyId===ow.id)&&x.amount===l.amount&&(Number(x.period)||1)===(Number(l.per)||1));
       if(m.length===1){l.contractId=m[0].id;m[0].lineRef={kind,id:ow.id,line:l.id};MIG.linked++}}
     c.linkV=1;MIG.dirty=true}
+  coRepair(c);
   return c;
 }
+/* Entreprises : catégories et rattachements restés sans entreprise (entreprise supprimée après avoir repris les catégories d’une autre).
+   - recette au taux micro (me_bnc…) rattachée à aucune entreprise → l’entreprise micro du même régime ;
+   - « Charges d’entreprise » et « URSSAF » sans entreprise → la micro-entreprise (ou l’unique entreprise) ;
+   - contrats et activités pointant vers une entreprise disparue → rattachement retiré (repli automatique par catégorie).
+   Une catégorie décochée volontairement dans une entreprise (exclInc / noCo) n’est jamais reprise. */
+function coRepair(c){const L=c.companies||[];if(!L.length)return;const ids=new Set(L.map(x=>x.id));let n=0;
+  const owned=new Set(L.flatMap(x=>x.incCats||[]));const excl=new Set(L.flatMap(x=>x.exclInc||[]));
+  for(const k of (c.cats||[])){if(k.kind!=='inc'||k.parent||owned.has(k.id)||excl.has(k.id))continue;const pr=k.tax&&k.tax.preset;if(!pr||!/^me_/.test(pr))continue;
+    const co=L.find(x=>x.regime===pr);if(co){(co.incCats=co.incCats||[]).push(k.id);owned.add(k.id);n++}}
+  const main=L.find(x=>/^me_/.test(x.regime||''))||(L.length===1?L[0]:null);
+  for(const k of (c.cats||[])){if(k.kind!=='exp')continue;
+    if(k.companyId&&!ids.has(k.companyId)){delete k.companyId;n++}
+    if(main&&!k.companyId&&!k.noCo&&(k.id==='e-pro'||k.id==='e-impots-urssaf')){k.companyId=main.id;n++}}
+  for(const x of (c.contracts||[]))if(x.companyId&&!ids.has(x.companyId)){delete x.companyId;n++}
+  for(const a of ((c.plan||{}).activities||[]))if(a.companyId&&!ids.has(a.companyId)){delete a.companyId;n++}
+  if(n){MIG.dirty=true;MIG.co=n}}
 const MIG={dirty:false,linked:0};
 let COVM0='m';try{COVM0=localStorage.getItem('cov-mode')||'m'}catch(e){}
 
@@ -906,13 +923,13 @@ const C={
   /* Dépense récurrente « obligatoire » : liée à un contrat, ou cotisation URSSAF liée à une recette. Les dépenses marquées récurrentes sans contrat (abonnements, dons…) restent des dépenses courantes. */
   /* Entreprise d’une dépense : choix manuel > cotisation liée à une recette > catégorie marquée. '-' = aucune. */
   companyOf(o){if(o.kind!=='exp')return null;const L=S.cfg.companies||[];if(!L.length)return null;
-    if(o.companyId)return o.companyId==='-'?null:(L.some(x=>x.id===o.companyId)?o.companyId:null);
+    if(o.companyId==='-')return null;if(o.companyId&&L.some(x=>x.id===o.companyId))return o.companyId;
     const src=URS.src(o);if(src){const inc=findOp(src);if(inc){const co=C.incCompany(inc);if(co)return co}}
     let c=C.cat(o.catId),g=0;while(c&&g++<6){if(c.companyId)return L.some(x=>x.id===c.companyId)?c.companyId:null;c=c.parent?C.cat(c.parent):null}return null},
   company(id){return (S.cfg.companies||[]).find(x=>x.id===id)},
   /* Entreprise d’une recette : choix sur la recette > entreprise de l’activité vendue > catégorie cochée dans l’entreprise. '-' = aucune. */
   incCompany(o){if(o.kind!=='inc')return null;const L=S.cfg.companies||[];if(!L.length)return null;
-    if(o.companyId)return o.companyId==='-'?null:(L.some(x=>x.id===o.companyId)?o.companyId:null);
+    if(o.companyId==='-')return null;if(o.companyId&&L.some(x=>x.id===o.companyId))return o.companyId;
     const a=o.actId&&(planCfg().activities||[]).find(x=>x.id===o.actId);if(a&&a.companyId&&L.some(x=>x.id===a.companyId))return a.companyId;
     const rt=C.root(o.catId);const co=L.find(x=>(x.incCats||[]).includes(o.catId)||(rt&&(x.incCats||[]).includes(rt.id)));return co?co.id:null},
   isRecurringOp(o){return !!(o.contractId||o.urssafFor||String(o.id||'').startsWith('op-urs-'))},
@@ -2865,21 +2882,32 @@ function vReglages(){
   <div class="panel"><h3>Sécurité</h3><p class="small" style="margin:0">Cette page est privée. Tes données sont dans une base liée à la page, lisible et modifiable uniquement par toi, même si tu partages le lien. Aucun identifiant bancaire n’est demandé. Utilise « Masquer les montants » en public, et garde le verrouillage de ton téléphone actif.</p></div>`;
 }
 const COREG={me_bnc:'Micro-entreprise BNC',me_cipav:'Micro-entreprise BNC (CIPAV)',me_bics:'Micro-entreprise BIC services',me_bicv:'Micro-entreprise BIC vente',ei:'Entreprise individuelle au réel',eurl:'EURL',sasu:'SASU / SAS',sci:'SCI',autre:'Autre'};
-function coForm(id){const L=S.cfg.companies=S.cfg.companies||[];const x=id?L.find(c=>c.id===id):{id:'co-'+uid(),name:'',regime:'eurl',incCats:[]};if(!x)return;
+function coForm(id){const L=S.cfg.companies=S.cfg.companies||[];const x=id?L.find(c=>c.id===id):{id:'co-'+uid(),name:'',regime:'eurl',incCats:[]};if(!x)return;const prevInc=new Set(x.incCats||[]);
   const incs=S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent);const exps=S.cfg.cats.filter(c=>c.kind==='exp');
   cfgForm(id?'Entreprise · '+x.name:'Nouvelle entreprise',[{k:'name',l:'Nom',req:true,ph:'ex. Olympe Athlétique SASU'},{k:'regime',l:'Forme et régime',t:'select',o:Object.entries(COREG)},
     {k:'_h1',t:'html',html:`<div class="grp">Ses recettes</div><p class="small muted" style="margin:0">Les cotisations URSSAF créées avec ces recettes sont rattachées à cette entreprise.${id?'':' Ne coche rien pour une nouvelle activité : une catégorie « Chiffre d’affaires » à son nom est créée, avec les taux URSSAF de la micro-entreprise si c’est ton régime.'}</p>`},
-    ...incs.map(c=>({k:'inc_'+c.id,l:c.name,t:'check'})),
+    ...incs.map(c=>{const ow=L.find(y=>y!==x&&(y.incCats||[]).includes(c.id));return {k:'inc_'+c.id,l:c.name+(ow?` — actuellement « ${ow.name} » : la cocher la retire de cette entreprise`:''),t:'check'}}),
     {k:'_h2',t:'html',html:`<div class="grp">Ses charges</div><p class="small muted" style="margin:0">Les dépenses de ces catégories sont des charges de cette entreprise.${id?'':' Sans case cochée, une catégorie « Charges » à son nom est créée.'}</p>`},
-    ...exps.filter(c=>!c.parent||!exps.find(p=>p.id===c.parent&&p.companyId===x.id)).map(c=>({k:'exp_'+c.id,l:(c.parent?'↳ ':'')+c.name,t:'check'}))],
+    ...exps.filter(c=>!c.parent||!exps.find(p=>p.id===c.parent&&p.companyId===x.id)).map(c=>{const ow=c.companyId&&c.companyId!==x.id&&L.find(y=>y.id===c.companyId);return {k:'exp_'+c.id,l:(c.parent?'↳ ':'')+c.name+(ow?` — actuellement « ${ow.name} »`:''),t:'check'}})],
     {...x,...Object.fromEntries(incs.map(c=>['inc_'+c.id,(x.incCats||[]).includes(c.id)])),...Object.fromEntries(exps.map(c=>['exp_'+c.id,c.companyId===x.id]))},
     (o)=>{x.name=o.name.trim();x.regime=o.regime;x.incCats=incs.filter(c=>o['inc_'+c.id]).map(c=>c.id);
       if(!x.incCats.length){const ci={id:'i-co-'+uid(),kind:'inc',name:'Chiffre d’affaires · '+x.name,parent:null,nature:'actif',bucket:'exploit'};if(MICRO_CASES[x.regime]&&TAX_PRESETS[x.regime])ci.tax={...taxFromPreset(x.regime),vl:false};S.cfg.cats.push(ci);x.incCats=[ci.id]}
       if(!exps.some(c=>o['exp_'+c.id]))S.cfg.cats.push({id:'e-co-'+uid(),kind:'exp',name:'Charges · '+x.name,parent:null,inRef:true,companyId:x.id,note:'Charges de l’entreprise'});
-      for(const c of incs)if(o['inc_'+c.id])for(const y of L)if(y!==x)y.incCats=(y.incCats||[]).filter(i=>i!==c.id);
-      for(const c of exps){if(('exp_'+c.id) in o){if(o['exp_'+c.id])c.companyId=x.id;else if(c.companyId===x.id)delete c.companyId}}
+      x.took=x.took||{};
+      for(const c of incs){if(o['inc_'+c.id]){for(const y of L)if(y!==x&&(y.incCats||[]).includes(c.id)){y.incCats=y.incCats.filter(i=>i!==c.id);x.took['inc:'+c.id]=y.id}x.exclInc=(x.exclInc||[]).filter(i=>i!==c.id)}
+        else if(prevInc.has(c.id))x.exclInc=[...new Set([...(x.exclInc||[]),c.id])]}
+      for(const c of exps){if(('exp_'+c.id) in o){if(o['exp_'+c.id]){if(c.companyId&&c.companyId!==x.id)x.took['exp:'+c.id]=c.companyId;c.companyId=x.id;delete c.noCo}else if(c.companyId===x.id){delete c.companyId;c.noCo=true}}}
+      if(!Object.keys(x.took).length)delete x.took;
       if(!id)L.push(x);saveCfg();toast('Entreprise enregistrée')},
-    {onDelete:id?()=>{S.cfg.companies=L.filter(c=>c.id!==id);for(const c of S.cfg.cats)if(c.companyId===id)delete c.companyId;saveCfg();toast('Entreprise retirée')}:null})}
+    {onDelete:id?()=>{const took=x.took||{};S.cfg.companies=L.filter(c=>c.id!==id);const R=S.cfg.companies;let back=0;
+      /* Rend à leur entreprise d’origine les catégories que celle-ci avait reprises */
+      for(const [k,from] of Object.entries(took)){const [kind,cid]=[k.slice(0,3),k.slice(4)];const y=R.find(z=>z.id===from);if(!y)continue;
+        if(kind==='inc'&&(x.incCats||[]).includes(cid)&&!R.some(z=>(z.incCats||[]).includes(cid))){y.incCats=[...(y.incCats||[]),cid];back++}
+        if(kind==='exp'){const c=S.cfg.cats.find(z=>z.id===cid);if(c&&c.companyId===id){c.companyId=from;back++}}}
+      for(const c of S.cfg.cats)if(c.companyId===id)delete c.companyId;
+      for(const c of S.cfg.contracts)if(c.companyId===id)delete c.companyId;
+      for(const a of (planCfg().activities||[]))if(a.companyId===id)delete a.companyId;
+      MIG.dirty=false;coRepair(S.cfg);saveCfg();toast(back||MIG.co?'Entreprise retirée · ses catégories sont revenues à leur entreprise d’origine':'Entreprise retirée')}:null})}
 const NAT={actif:'Revenu actif',passif:'Revenu passif',semi:'Semi-passif',exceptionnel:'Exceptionnel',remboursement:'Remboursement'};
 
 /* ==================== Mémos : post-it libres (infos entreprise, identifiants, à payer, provisions) ==================== */
@@ -3559,7 +3587,7 @@ async function boot(){
   if(!db){S.mode='local';render();autoGenerate();return}
   S.db=db;S.mode='db';render();
   db.doc('fin/prices').onSnapshot(snap=>{if(snap.exists){const d=clone(snap.data());S.prices={history:d.history||{},src:d.src||{},updatedAt:d.updatedAt||null};if(S.pfPending&&S.prices.updatedAt&&Date.parse(S.prices.updatedAt)>S.pfPending){S.pfPending=null;toast('Cours mis à jour')}}render()},err=>console.warn(err));
-  db.doc('fin/config').onSnapshot(snap=>{if(snap.exists){MIG.dirty=false;MIG.linked=0;S.cfg=migrate(clone(snap.data()));if(MIG.dirty){saveCfg();if(MIG.linked)toast(MIG.linked+(MIG.linked>1?' lignes de biens reliées à leurs contrats':' ligne reliée à son contrat'))}}S.cfgLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des réglages impossible pour le moment.')});
+  db.doc('fin/config').onSnapshot(snap=>{if(snap.exists){MIG.dirty=false;MIG.linked=0;MIG.co=0;S.cfg=migrate(clone(snap.data()));if(MIG.dirty){saveCfg();if(MIG.linked)toast(MIG.linked+(MIG.linked>1?' lignes de biens reliées à leurs contrats':' ligne reliée à son contrat'));if(MIG.co)toast('Entreprises : catégories et rattachements rétablis')}}S.cfgLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des réglages impossible pour le moment.')});
   db.collection('memos').onSnapshot(qs=>{S.memos=qs.docs.map(d=>({id:d.id,...d.data()}));S.memosLoaded=true;if(S.route==='memos')render()},err=>console.warn(err));
   db.collection('months').onSnapshot(qs=>{if(S.inflight>0)return;const m={};qs.docs.forEach(d=>{const x=d.data();m[d.id]=(x&&x.items)||[]});S.months=m;S.monthsLoaded=true;render();autoGenerate();maybeOnboard()},err=>{console.warn(err);toast('Lecture des opérations impossible pour le moment.')});
 }
