@@ -309,6 +309,7 @@ h3.grp-title.fold-h .fold-b{right:0}.panel.is-folded:not(.q-open){padding-bottom
 .card>.ch.fold-h{align-items:center;padding-right:50px}.cards:has(.card.is-folded){align-items:start}.card.is-folded:not(.q-open)>.ch{padding-bottom:14px}
 .nacc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}.nacc-bar select{min-width:0;flex:1 1 180px;max-width:280px}
 .nacc-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px}.nacc-row .nacc-ck{width:20px;height:20px;margin:0 0 0 4px}
+.co-dormant{opacity:.7}.co-dormant .ch{background:var(--soft)}.co-dormant .badge{margin-left:auto}
 .acctot{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:14px 18px;margin:8px 0 12px;border-radius:18px;border:1.5px solid var(--line);background:var(--card)}
 .acctot .eyebrow{flex:1 1 100%}.acctot b{font-size:clamp(26px,6vw,34px);line-height:1.1}
 .acctot.pos{background:color-mix(in srgb,var(--pos) 11%,var(--card));border-color:color-mix(in srgb,var(--pos) 40%,var(--line))}.acctot.pos b{color:var(--pos)}
@@ -1454,7 +1455,7 @@ function actForm(id,name){
   cfgForm(id?'Activité · '+a.name:'Nouvelle activité',[
     {k:'name',l:'Nom',req:true},{k:'type',l:'Type',t:'select',o:Object.entries(ACT_TYPES)},
     {k:'catId',l:'Catégorie de recette (pour les cotisations et le suivi)',t:'select',o:[['','Aucune'],...S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent).map(c=>[c.id,c.name])]},
-    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise qui vend cette activité',t:'select',o:[['','Selon la catégorie de recette'],...S.cfg.companies.map(x=>[x.id,x.name])],h:'Les ventes de cette activité seront comptées dans cette entreprise (chiffre d’affaires, URSSAF).'}]:[]),
+    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise qui vend cette activité',t:'select',o:[['','Selon la catégorie de recette'],...S.cfg.companies.map(x=>[x.id,x.name+(x.dormant?' (en sommeil)':'')])],h:'Les ventes de cette activité seront comptées dans cette entreprise (chiffre d’affaires, URSSAF).'}]:[]),
     {k:'price',l:'Prix de vente',t:'money'},{k:'unit',l:'Unité',ph:'séance, heure, stage, vente, mois…'},{k:'unitPlural',l:'Unité au pluriel',ph:'séances, ventes…'},
     {k:'hours',l:'Temps passé par unité (heures, préparation et trajet compris)',t:'number',h:'Sert à calculer ton taux horaire réel.'},
     {k:'cost',l:'Frais directs par unité',t:'money',h:'Déplacement, matériel, commission de plateforme…'},
@@ -2313,7 +2314,8 @@ function vEntreprises(){const L=S.cfg.companies||[];const cy=Number(todayISO().s
   if(!L.length)return h+'<p class="empty">Aucune entreprise. Ajoute la tienne pour suivre son chiffre d’affaires, ses cotisations et ses charges.</p>';
   h+=`<div class="toolbar" style="margin-top:0"><span class="small muted">Année</span><div class="miniseg" role="group" aria-label="Année">${[cy-1,cy].map(v=>`<button style="width:auto;padding:0 12px;border-radius:999px" class="${v===y?'on':''}" data-act="co-y" data-v="${v}" aria-pressed="${v===y}">${v}</button>`).join('')}</div></div><div class="cards">`;
   const nx=URS.periods().filter(p=>URS.rest(p)>0).sort((a,b)=>URS.due(a.k).localeCompare(URS.due(b.k)))[0];
-  for(const co of L){const st=coStats(co,y),res=st.ca-st.urs-st.chg;const pk=COPLAF[co.regime],pl=pk&&FP.micro[pk]?FP.micro[pk].plafond*100:null;
+  for(const co of L){if(co.dormant){h+=`<div class="card co-dormant"><div class="ch"><h3>${esc(co.name)}</h3><span class="small">${esc(COREG[co.regime]||co.regime||'')}</span><span class="badge">en sommeil</span></div><div class="cb"><p class="small muted" style="margin:0 0 8px">Société en sommeil : aucune activité, aucun coût. Elle n’entre dans aucun calcul.</p><div class="btns"><button class="btn sm" data-act="co-edit" data-id="${co.id}">Modifier</button></div></div></div>`;continue}
+    const st=coStats(co,y),res=st.ca-st.urs-st.chg;const pk=COPLAF[co.regime],pl=pk&&FP.micro[pk]?FP.micro[pk].plafond*100:null;
     const lc=S.cfg.contracts.filter(c=>c.companyId===co.id&&!c.lineRef&&CT.active(c));
     h+=`<div class="card"><div class="ch"><h3>${esc(co.name)}</h3><span class="small">${esc(COREG[co.regime]||co.regime||'')}</span></div><div class="cb">
       <div class="bizkpi"><div><span>Chiffre d’affaires ${y}</span><b class="num money">${money(st.ca)}</b></div><div><span>URSSAF</span><b class="num money calm">${st.urs?'−':''}${money(st.urs)}</b></div><div><span>Charges</span><b class="num money">${st.chg?'−':''}${money(st.chg)}</b></div><div class="hl"><span>Résultat</span><b class="num money ${res>=0?'pos':'neg'}">${money(res)}</b></div></div>
@@ -2423,7 +2425,7 @@ function contractForm(id,preset){
     {k:'skipTxt',l:'Mois sans prélèvement (facultatif)',ph:'ex. 11, 12',h:'Numéros des mois sautés chaque année, par exemple pour une taxe foncière mensualisée sur 10 mois.'},
     {k:'autoPay',l:'Enregistrer automatiquement chaque prélèvement comme payé, à son échéance',t:'check'},
     {k:'propertyId',l:'Bien immobilier lié',t:'select',o:[['','Aucun'],...S.cfg.properties.map(p=>[p.id,p.name])]},
-    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise liée',t:'select',o:[['','Aucune (charge personnelle)'],...S.cfg.companies.map(x=>[x.id,x.name])]}]:[]),
+    ...((S.cfg.companies||[]).length?[{k:'companyId',l:'Entreprise liée',t:'select',o:[['','Aucune (charge personnelle)'],...S.cfg.companies.map(x=>[x.id,x.name+(x.dormant?' (en sommeil)':'')])]}]:[]),
     {k:'url',l:'URL de l’espace client',t:'url',ph:'https://'},
     {k:'login',l:'Identifiant de connexion',ph:'ex. adresse e-mail ou numéro client',h:'Jamais de mot de passe ni de code d’authentification.'},
     {k:'start',l:'Date de début du contrat',t:'date',h:'Les prélèvements passés depuis cette date sont ajoutés, au jour du mois du prochain prélèvement.'},
@@ -2884,13 +2886,13 @@ function vReglages(){
 const COREG={me_bnc:'Micro-entreprise BNC',me_cipav:'Micro-entreprise BNC (CIPAV)',me_bics:'Micro-entreprise BIC services',me_bicv:'Micro-entreprise BIC vente',ei:'Entreprise individuelle au réel',eurl:'EURL',sasu:'SASU / SAS',sci:'SCI',autre:'Autre'};
 function coForm(id){const L=S.cfg.companies=S.cfg.companies||[];const x=id?L.find(c=>c.id===id):{id:'co-'+uid(),name:'',regime:'eurl',incCats:[]};if(!x)return;const prevInc=new Set(x.incCats||[]);
   const incs=S.cfg.cats.filter(c=>c.kind==='inc'&&!c.parent);const exps=S.cfg.cats.filter(c=>c.kind==='exp');
-  cfgForm(id?'Entreprise · '+x.name:'Nouvelle entreprise',[{k:'name',l:'Nom',req:true,ph:'ex. Olympe Athlétique SASU'},{k:'regime',l:'Forme et régime',t:'select',o:Object.entries(COREG)},
+  cfgForm(id?'Entreprise · '+x.name:'Nouvelle entreprise',[{k:'name',l:'Nom',req:true,ph:'ex. Olympe Athlétique SASU'},{k:'regime',l:'Forme et régime',t:'select',o:Object.entries(COREG)},{k:'dormant',l:'En sommeil : aucune activité, aucun coût (elle reste listée pour mémoire)',t:'check'},
     {k:'_h1',t:'html',html:`<div class="grp">Ses recettes</div><p class="small muted" style="margin:0">Les cotisations URSSAF créées avec ces recettes sont rattachées à cette entreprise.${id?'':' Ne coche rien pour une nouvelle activité : une catégorie « Chiffre d’affaires » à son nom est créée, avec les taux URSSAF de la micro-entreprise si c’est ton régime.'}</p>`},
     ...incs.map(c=>{const ow=L.find(y=>y!==x&&(y.incCats||[]).includes(c.id));return {k:'inc_'+c.id,l:c.name+(ow?` — actuellement « ${ow.name} » : la cocher la retire de cette entreprise`:''),t:'check'}}),
     {k:'_h2',t:'html',html:`<div class="grp">Ses charges</div><p class="small muted" style="margin:0">Les dépenses de ces catégories sont des charges de cette entreprise.${id?'':' Sans case cochée, une catégorie « Charges » à son nom est créée.'}</p>`},
     ...exps.filter(c=>!c.parent||!exps.find(p=>p.id===c.parent&&p.companyId===x.id)).map(c=>{const ow=c.companyId&&c.companyId!==x.id&&L.find(y=>y.id===c.companyId);return {k:'exp_'+c.id,l:(c.parent?'↳ ':'')+c.name+(ow?` — actuellement « ${ow.name} »`:''),t:'check'}})],
     {...x,...Object.fromEntries(incs.map(c=>['inc_'+c.id,(x.incCats||[]).includes(c.id)])),...Object.fromEntries(exps.map(c=>['exp_'+c.id,c.companyId===x.id]))},
-    (o)=>{x.name=o.name.trim();x.regime=o.regime;x.incCats=incs.filter(c=>o['inc_'+c.id]).map(c=>c.id);
+    (o)=>{x.name=o.name.trim();x.regime=o.regime;if(o.dormant)x.dormant=true;else delete x.dormant;x.incCats=incs.filter(c=>o['inc_'+c.id]).map(c=>c.id);
       if(!x.incCats.length){const ci={id:'i-co-'+uid(),kind:'inc',name:'Chiffre d’affaires · '+x.name,parent:null,nature:'actif',bucket:'exploit'};if(MICRO_CASES[x.regime]&&TAX_PRESETS[x.regime])ci.tax={...taxFromPreset(x.regime),vl:false};S.cfg.cats.push(ci);x.incCats=[ci.id]}
       if(!exps.some(c=>o['exp_'+c.id]))S.cfg.cats.push({id:'e-co-'+uid(),kind:'exp',name:'Charges · '+x.name,parent:null,inRef:true,companyId:x.id,note:'Charges de l’entreprise'});
       x.took=x.took||{};
@@ -3016,7 +3018,7 @@ function opForm(kind,op,preset={}){
     }
     b+=`<details class="more" ${d.comment||d.propertyId||d.contractId||d.activity?'open':''}><summary>Plus d’options</summary><div class="stack" style="margin-top:8px">
       <div class="grid2"><label class="f">Bien immobilier lié<select id="op-prop">${propOptions(d.propertyId)}</select></label><label class="f">Contrat lié<select id="op-contract">${contractOptions(d.contractId)}</select></label></div>
-      ${kind==='exp'&&(S.cfg.companies||[]).length?`<label class="f">Charge d’entreprise<select id="op-company"><option value="" ${!d.companyId?'selected':''}>Automatique (selon la catégorie)</option>${S.cfg.companies.map(x=>`<option value="${x.id}" ${d.companyId===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}<option value="-" ${d.companyId==='-'?'selected':''}>Pas une charge d’entreprise</option></select></label>`:''}
+      ${kind==='exp'&&(S.cfg.companies||[]).length?`<label class="f">Charge d’entreprise<select id="op-company"><option value="" ${!d.companyId?'selected':''}>Automatique (selon la catégorie)</option>${S.cfg.companies.filter(x=>!x.dormant||d.companyId===x.id).map(x=>`<option value="${x.id}" ${d.companyId===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}<option value="-" ${d.companyId==='-'?'selected':''}>Pas une charge d’entreprise</option></select></label>`:''}
       <label class="f">Activité professionnelle<input type="text" id="op-activity" value="${esc(d.activity)}" placeholder="ex. Olympe Athlétique"></label>
       <label class="f">Commentaire<textarea id="op-comment">${esc(d.comment)}</textarea></label></div></details>`;
   }else{
@@ -3044,7 +3046,7 @@ function renderAct(first){const box=$('#act-box');if(!box)return;const d=modalSt
   const L=S.cfg.companies||[];const coCur=first?(d.companyId||''):(($('#op-icompany')||{}).value||'');
   if(!acts.length&&!L.length){box.innerHTML='';return}
   box.innerHTML=`<div class="grid2">${acts.length?`<label class="f">Activité vendue<select id="op-act"><option value="">Aucune en particulier</option>${acts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.price!=null?' · '+money(a.price):''}</option>`).join('')}</select></label>`:''}
-    ${L.length?`<label class="f">Entreprise<select id="op-icompany"><option value="">${esc(actCoAuto(sel,cat))}</option>${L.map(x=>`<option value="${x.id}" ${coCur===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}<option value="-" ${coCur==='-'?'selected':''}>Aucune (revenu personnel)</option></select></label>`:''}</div>`}
+    ${L.length?`<label class="f">Entreprise<select id="op-icompany"><option value="">${esc(actCoAuto(sel,cat))}</option>${L.filter(x=>!x.dormant||coCur===x.id).map(x=>`<option value="${x.id}" ${coCur===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}<option value="-" ${coCur==='-'?'selected':''}>Aucune (revenu personnel)</option></select></label>`:''}</div>`}
 function actCoAuto(actId,cat){const a=actId&&(planCfg().activities||[]).find(x=>x.id===actId);const co=C.incCompany({kind:'inc',catId:cat,actId:actId||undefined});return 'Automatique'+(co?' : '+((C.company(co)||{}).name||''):' : aucune')+(a&&a.companyId?' (activité)':'')}
 function actPicked(){const id=val('op-act');const a=id&&(planCfg().activities||[]).find(x=>x.id===id);
   if(a){const am=$('#op-amount');if(am&&!parseMoney(am.value)&&a.price!=null){am.value=cIn(a.price);am.dispatchEvent(new Event('input',{bubbles:true}))}
@@ -3229,7 +3231,7 @@ function catForm(id,kind){
     {k:'tx_urssaf',l:'Cotisations URSSAF (%)',t:'number'},{k:'tx_cfp',l:'Formation pro, CFP (%)',t:'number'},{k:'tx_ps',l:'Prélèvements sociaux (%)',t:'number'},
     {k:'tx_ir',l:'Impôt sur le revenu (%)',t:'number',h:'Salaire : ton taux de prélèvement à la source (sur ta fiche de paie). Autres : ta tranche marginale si tu veux provisionner l’impôt, sinon 0.'},{k:'tx_vl',l:'Option versement libératoire (micro-entreprise)',t:'check'});
   else{fields.push({k:'inRef',l:'Compter dans les dépenses de référence',t:'check'});
-    if((S.cfg.companies||[]).length)fields.push({k:'companyId',l:'Charges de quelle entreprise ?',t:'select',o:[['','Aucune (dépense personnelle)'],...S.cfg.companies.map(x=>[x.id,x.name])],h:'Les dépenses de cette catégorie (et de ses sous-catégories) iront dans « Charges d’entreprise » sur ta feuille.'})}
+    if((S.cfg.companies||[]).length)fields.push({k:'companyId',l:'Charges de quelle entreprise ?',t:'select',o:[['','Aucune (dépense personnelle)'],...S.cfg.companies.map(x=>[x.id,x.name+(x.dormant?' (en sommeil)':'')])],h:'Les dépenses de cette catégorie (et de ses sous-catégories) iront dans « Charges d’entreprise » sur ta feuille.'})}
   fields.push({k:'note',l:'Note',ph:'Ce que contient la catégorie'});
   cfgForm(id?'Modifier la catégorie':'Nouvelle catégorie',fields,{...c,companyId:c.companyId||'',parent:c.parent||'',bucket:c.bucket||BUCKET_DEFAULT[c.id]||'autre',tx_preset:tx.preset,tx_mode:tx.mode||'brut',tx_urssaf:tx.urssaf,tx_cfp:tx.cfp,tx_ps:tx.ps,tx_ir:tx.ir,tx_vl:tx.vl},(o)=>{o.parent=o.parent||null;
     if(isRootInc){o.tax={preset:o.tx_preset,mode:o.tx_mode==='net'?'net':'brut',urssaf:Number(o.tx_urssaf)||0,cfp:Number(o.tx_cfp)||0,ps:Number(o.tx_ps)||0,ir:Number(o.tx_ir)||0,vl:!!o.tx_vl,year:TAX_YEAR};
