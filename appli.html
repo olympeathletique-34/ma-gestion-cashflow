@@ -1003,7 +1003,7 @@ const C={
     out.out=!!(out.ref&&out.ref>0&&out.passive>=out.ref);
     return out;
   },
-  balance(a,upto){if(a.initial==null)return null;if(upto&&a.initialDate&&upto<a.initialDate)return null;let b=a.initial;const since=a.initialDate||'0000-00-00';
+  balance(a,upto){/* Sans solde initial saisi : solde calculé = recettes − dépenses (± transferts) depuis la première opération */if(a.initial!=null&&upto&&a.initialDate&&upto<a.initialDate)return null;let b=a.initial==null?0:a.initial;const since=a.initial==null?'0000-00-00':(a.initialDate||'0000-00-00');
     for(const o of allOps()){if(!C.isReal(o)||o.date<since||(upto&&o.date>upto))continue;
       if(o.kind==='exp'&&o.accountId===a.id)b-=o.amount;
       else if(o.kind==='inc'&&o.accountId===a.id)b+=o.amount;
@@ -1283,7 +1283,7 @@ function bilanCards(nw){
   const GH=(t,v,ex)=>`<div class="grp qgh qga" style="padding:0 8px"><span>${t}</span><b class="num money">${v}${ex||''}</b></div>`;
   const bar=(v,t)=>v&&t?`<span class="bar"><i style="width:${Math.max(2,Math.round(v/t*100))}%"></i></span>`:'';
   let left='';
-  if(S.cfg.settings.includeAccounts!==false){left+=GH('Liquidités · soldes théoriques',money(S.cfg.accounts.reduce((t,a)=>t+(C.balance(a,S.nwDate)||0),0)))+S.cfg.accounts.map(a=>{const b=C.balance(a,S.nwDate);return `<a class="qrow" href="#comptes"><span class="lbl">${esc(a.name)}</span><span class="amt num money ${b==null?'zero':''}">${money(b)}</span>${b==null?'<span class="meta">Solde initial à renseigner</span>':bar(Math.max(0,b),nw.assets)}</a>`}).join('')}
+  if(S.cfg.settings.includeAccounts!==false){left+=GH('Liquidités · soldes théoriques',money(S.cfg.accounts.reduce((t,a)=>t+(C.balance(a,S.nwDate)||0),0)))+S.cfg.accounts.map(a=>{const b=C.balance(a,S.nwDate);return `<a class="qrow" href="#comptes"><span class="lbl">${esc(a.name)}</span><span class="amt num money ${b==null?'zero':''}">${money(b)}</span>${b==null?'<span class="meta">calculé</span>':bar(Math.max(0,b),nw.assets)}</a>`}).join('')}
   for(const cat of ACATS){const it=A.filter(x=>x.cat===cat);if(!it.length)continue;left+=GH(esc(cat),money(it.reduce((t,x)=>t+(C.valAt(x,'value',S.nwDate)||0),0)))+it.map(x=>{const v=C.valAt(x,'value',S.nwDate);return `<button class="qrow" data-act="edit-asset" data-id="${x.id}"><span class="lbl">${esc(x.name)}</span><span class="amt num money">${money(v)}</span>${bar(v,nw.assets)}<span class="meta">Valorisé le ${fdate(x.date)}</span></button>`}).join('')}
   if(pfCfg().positions.length){const D=S.nwDate||undefined;left+=(()=>{const T=pfSummary(D).t,pl=T.v-T.c;return GH('Placements',eurC(T.v),` <small class="${pl>=0?'pos':'neg'}">${pfPct(pl,T.c)}</small>`)})()+(()=>{const X=pfSummary(D);const R=g=>{const pl=g.v-g.c;return `<a class="qrow" href="#portefeuille"><span class="lbl">${esc(g.label)} <small>· ${g.ps.length} ligne${g.ps.length>1?'s':''}</small></span><span class="amt num money">${eurC(g.v)}</span>${bar(Math.round(g.v*100),nw.assets)}<span class="meta"><span class="${pl>=0?'pos':'neg'}">${pl>=0?'+':''}${eurC(pl)}</span> de plus-value latente${g.c?` (${(pl/g.c*100).toFixed(1).replace('.',',')} %)`:''}${g.missing?' · cours manquants':''}</span></a>`};const ln=(l,x)=>{const pl=x.v-x.c;return `<div class="qrow qtotal"><span class="lbl">${l}</span><span class="amt num money">${eurC(x.v)}</span><span class="meta"><span class="${pl>=0?'pos':'neg'}">${pl>=0?'+':''}${eurC(pl)} · ${pfPct(pl,x.c)}</span> sur ${eurC(x.c)} investis</span></div>`};return X.G.map(R).join('')})()}
   left+=`<a class="qrow" href="#portefeuille" style="color:var(--asset)"><span class="lbl">${pfCfg().positions.length?'Voir le détail de mes placements':'+ Ajouter mes actions, ETF et cryptos'}</span><span class="amt">›</span></a>`;
@@ -1611,8 +1611,7 @@ function accBalCls(v){return v==null?'':v<0?'neg':'pos'}
 function accCard(a,grp){const b=C.balance(a);const gap=b!=null&&a.real!=null?a.real-b:null;
   return `<div class="card"><div class="ch"><h3>${esc(a.name)}</h3>${grp?'':`<span class="small acc-ty">${esc(accType(a))}</span>`}<span class="acc-bal num money ${accBalCls(b)}">${b==null?'—':money(b)}</span></div><div class="cb">
       <div class="kv strong"><span class="k">Solde théorique</span><span class="v num money">${b==null?'—':money(b)}</span></div>
-      ${b==null?'<p class="small warn" style="margin:6px 0">Renseigne un solde initial et sa date pour calculer le solde.</p>':''}
-      <div class="kv"><span class="k">Solde initial<small>${a.initialDate?'au '+fdate(a.initialDate):'date à renseigner'}</small></span><span class="v num money">${money(a.initial)}</span></div>
+      ${a.initial==null?'<p class="small muted" style="margin:6px 0">Solde calculé : toutes les recettes − toutes les dépenses de ce compte. Tu peux saisir un solde initial dans « Modifier » pour repartir de ton solde bancaire.</p>':`<div class="kv"><span class="k">Solde initial<small>${a.initialDate?'au '+fdate(a.initialDate):'date à renseigner'}</small></span><span class="v num money">${money(a.initial)}</span></div>`}
       <div class="kv"><span class="k">Solde réel relevé<small>${a.realDate?'le '+fdate(a.realDate):'jamais relevé'}</small></span><span class="v num money">${money(a.real)}</span></div>
       ${gap!=null?`<div class="kv"><span class="k">Écart réel − théorique</span><span class="v num money ${gap?'warn':'pos'}">${moneyS(gap)}</span></div>`:''}
       <div class="btns"><button class="btn sm" data-act="edit-account" data-id="${a.id}">Modifier</button><button class="btn sm" data-act="real-balance" data-id="${a.id}">Relever le solde réel</button><button class="btn sm ghost" data-act="acc-ops" data-id="${a.id}">Opérations</button></div>${accMini(a)}</div></div>`}
@@ -1621,7 +1620,7 @@ function vComptes(){
   const all=S.cfg.accounts;const types=[];all.forEach(a=>{const t=accType(a);if(!types.includes(t))types.push(t)});
   if(S.accType&&!types.includes(S.accType))S.accType=null;
   const sumOf=l=>l.reduce((t,a)=>t+(C.balance(a)||0),0);
-  const missing=l=>l.filter(a=>C.balance(a)==null).length;
+  const missing=l=>0;
   const list=S.accType?all.filter(a=>accType(a)===S.accType):all;
   const tot=sumOf(list),mis=missing(list);
   let h=`<div class="toolbar"><h2 class="sheet-title" style="margin:6px 0">Mes comptes</h2><span class="sp"></span><button class="btn" data-act="new-tr">⇄ Transfert entre mes comptes</button><button class="btn" data-act="new-account">+ Ajouter un compte</button></div>
